@@ -138,6 +138,7 @@ type OpenAi struct {
 	MaxTokens     int
 	MaxTokensWeak int
 	Verbose       int
+	VerboseLog    func(log string)
 	
 	httpMain  *http.Client
 	httpWeak  *http.Client
@@ -292,8 +293,8 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 
 	if gpt.Verbose >= VerboseShowSending {
 		reqstr, reqerr := json.Marshal(request)
-		if reqerr == nil {
-			gpt.Coder.Term.WriteAgentLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
+		if reqerr == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
 		}
 	}
 
@@ -316,8 +317,8 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 
 	if gpt.Verbose >= VerboseShowReceiving {
 		repstr, reperr := json.Marshal(response)
-		if reperr == nil {
-			gpt.Coder.Term.WriteAgentLog(fmt.Sprintf("RECV_FROM_LLVM:\n %s \n", repstr))
+		if reperr == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("RECV_FROM_LLVM:\n %s \n", repstr))
 		}
 	}
 
@@ -335,8 +336,8 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 
 	if gpt.Verbose >= VerboseShowSending {
 		reqstr, reqerr := json.Marshal(request)
-		if reqerr == nil {
-			gpt.Coder.Term.WriteAgentLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
+		if reqerr == nil && gpt.VerboseLog {
+			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
 		}
 	}
 
@@ -417,8 +418,8 @@ func (gpt *OpenAi) SendMessages(cxt context.Context, msgs []autog.ChatMessage) (
 
 	if gpt.Verbose >= VerboseShowReceiving {
 		msgstr, err := json.Marshal(msg)
-		if err == nil {
-			gpt.Coder.Term.WriteAgentLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
+		if err == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
 		}
 	}
 
@@ -430,8 +431,8 @@ func (gpt *OpenAi) SendMessagesStream(cxt context.Context, msgs []autog.ChatMess
 
 	if gpt.Verbose >= VerboseShowReceiving {
 		msgstr, err := json.Marshal(msg)
-		if err == nil {
-			gpt.Coder.Term.WriteAgentLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
+		if err == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
 		}
 	}
 
