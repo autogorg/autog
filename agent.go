@@ -94,4 +94,48 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	return a
 }
 
+func (a *Agent) DoAction(doAct *DoAction) *Agent {
+	a.DoAction = doAct
+	if !a.CanDoAction {
+		return a
+	}
+	a.CanDoAction = false
+	a.CanDoReflection = false
+	a.ReflectionContent = ""
+	if a.DoAction == nil {
+		return a
+	}
+	ok, react := a.DoAction.doDo(a.ResponseMessage.Content)
+	a.ReflectionContent = react
+	a.CanDoReflection = !ok
+	return a
+}
 
+func (a *Agent) DoReflection(doRef *DoReflection, retry int) *Agent {
+	if doRef == nil {
+		doRef = &DoReflection {
+			Do : func (reflection string, retry int) {
+				a.AskReflection(reflection)
+				a.WaitResponse(nil, a.Output)
+				a.DoAction(a.DoAction)
+				a.DoReflection(defRef)
+			}
+		}
+	}
+	a.DoReflection = doRef
+	if !a.CanDoReflection {
+		return a
+	}
+	react := a.ReflectionContent
+	a.CanDoAction = false
+	a.CanDoReflection = false
+	a.ReflectionContent = ""
+	retry -= 1
+	if retry <= 0 {
+		return a
+	}
+	if len(react) > 0 {
+		a.DoReflection.doDo(react, retry)
+	}
+	return a
+}
