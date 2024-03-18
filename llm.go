@@ -33,7 +33,7 @@ func (cm *ChatMessage) String() string {
 	return fmt.Sprintf("{Role:%s, Content:%s}", cm.Role, cm.Content)
 }
 
-type LLMStreamer interface {
+type StreamReader interface {
 	StreamStart func() *strings.Builder
 	StreamDelta func(contentbuf *strings.Builder, delta string)
 	StreamEnd func(contentbuf *strings.Builder)
@@ -41,7 +41,12 @@ type LLMStreamer interface {
 
 type LLM interface {
 	InitLLM() error
+
 	CalcTokens(cxt context.Context, content string) int
 	SendMessages(cxt context.Context, msgs []ChatMessage) (LLMStatus, ChatMessage)
-	SendMessagesStream(cxt context.Context, msgs []ChatMessage, reader LLMStreamer) (LLMStatus, ChatMessage)
+	SendMessagesStream(cxt context.Context, msgs []ChatMessage, reader StreamReader) (LLMStatus, ChatMessage)
+
+	CalcTokensByWeakModel(cxt context.Context, content string) int
+	SendMessagesByWeakModel(cxt context.Context, msgs []ChatMessage) (LLMStatus, ChatMessage)
+	SendMessagesStreamByWeakModel(cxt context.Context, msgs []ChatMessage, reader StreamReader) (LLMStatus, ChatMessage)
 }
