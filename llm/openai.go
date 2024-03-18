@@ -160,6 +160,30 @@ func (gpt *OpenAi) InitLLM() error {
 	if len(gpt.ModelWeak) <= 0 {
 		gpt.ModelWeak = defaultModelWeak
 	}
+	if gpt.Temperature <= 0 {
+		// TODO: Changed by model
+		gpt.Temperature = 0
+	}
+	if gpt.TemperatureWeak <= 0 {
+		// TODO: Changed by model
+		gpt.TemperatureWeak = 0
+	}
+	if gpt.TimeOut <= 0 {
+		// TODO: Changed by model
+		gpt.TimeOut = 300
+	}
+	if gpt.TimeOutWeak <= 0 {
+		// TODO: Changed by model
+		gpt.TimeOutWeak = 300
+	}
+	if gpt.MaxTokens <= 0 {
+		// TODO: Changed by model
+		gpt.MaxTokens = 0
+	}
+	if gpt.MaxTokensWeak <= 0 {
+		// TODO: Changed by model
+		gpt.MaxTokensWeak = 0
+	}
 
 	gpt.httpMain = &http.Client{
 		Timeout: time.Duration(gpt.TimeOut) * time.Second,
