@@ -73,22 +73,21 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	a.Context = cxt
 	a.Output  = output
+	var sts LLMStatus
+	var msg ChatMessage
 	if !a.Stream {
 		buf := output.StreamStart()
-		sts, msg := a.LLM.SendMessages(cxt, a.PendingMessages)
-		a.ResponseStatus  = sts
-		a.ResponseMessage = msg
+		sts, msg = a.LLM.SendMessages(cxt, a.PendingMessages)
 		if sts == LLM_STATUS_OK {
 			output.StreamDelta(buf, msg.Content)
 		}
 		output.StreamEnd(buf)
-		a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
 	} else {
-		sts, msg := a.LLM.SendMessagesStream(cxt, a.PendingMessages, output)
-		a.ResponseStatus  = sts
-		a.ResponseMessage = msg
-		a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
+		sts, msg = a.LLM.SendMessagesStream(cxt, a.PendingMessages, output)
 	}
+	a.ResponseStatus  = sts
+	a.ResponseMessage = msg
+	a.ShortHistoryMessages = append(a.ShortHistoryMessages, a.ResponseMessage)
 	a.CanDoAction = a.ResponseStatus == LLM_STATUS_OK
 	a.CanDoReflection = false
 	return a
