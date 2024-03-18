@@ -2,9 +2,12 @@ package autog
 
 type PromptItem {
 	Name string
-	GenMessages func (query string) []ChatMessage
+	GetMessages func (query string) []ChatMessage
 }
 
-func (pi *PromptItem) doGenMessages(query string) []ChatMessage {
-	return pi.GenMessages(query)
+func (pi *PromptItem) doGetMessages(query string) []ChatMessage {
+	if pi.GetMessages == nil {
+		return []ChatMessage{}
+	}
+	return pi.GetMessages(query)
 }

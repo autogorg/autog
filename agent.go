@@ -13,7 +13,7 @@ type Agent {
 	Output *Output
 	LongHistoryMessages []ChatMessage
 	ShortHistoryMessages []ChatMessage
-	PendingMessages []ChatMessage
+	PromptMessages []ChatMessage
 	LLM LLM
 	Stream bool
 	ResponseStatus  LLMStatus
@@ -37,10 +37,11 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 	a.Prompts = prompts
 	a.CanDoAction = false
 	a.CanDoReflection = false
+	a.ReflectionContent = ""
 	return a
 }
 
-func (a *Agent) WaitRequest(cxt context.Context, input *Input) *Agent {
+func (a *Agent) ReadQuestion(cxt context.Context, input *Input) *Agent {
 	a.Context = cxt
 	a.Input   = input
 	a.Request = input.doReadInput()
@@ -50,13 +51,14 @@ func (a *Agent) WaitRequest(cxt context.Context, input *Input) *Agent {
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 	var msgs []ChatMessage
 	msg := ChatMessage{ Role:USER, Content:a.Request }
+	// TODO: Summary Long & Short HistoryMessages
 	for pmt := range a.Prompts {
-		pms := pmt.doGenMessages(a.Request)
+		pms := pmt.doGetMessages(a.Request)
 		if len(pms) > 0 {
 			msgs = append(msgs, pms)
 		}
 	}
-	a.PendingMessages = msgs
+	a.PromptMessages = msgs
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
 	a.LLM = llm
 	a.Stream = stream
@@ -65,7 +67,7 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 
 func (a *Agent) AskReflection(reflection string) *Agent {
 	msg := ChatMessage{ Role:USER, Content:reflection }
-	a.PendingMessages = append(a.PendingMessages, msg)
+	a.PromptMessages = append(a.PromptMessages, msg)
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
 	return a
 }
@@ -75,15 +77,25 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	a.Output  = output
 	var sts LLMStatus
 	var msg ChatMessage
+	var contentbuf *strings.Builder
 	if !a.Stream {
-		buf := output.StreamStart()
-		sts, msg = a.LLM.SendMessages(cxt, a.PendingMessages)
-		if sts == LLM_STATUS_OK {
-			output.StreamDelta(buf, msg.Content)
+		if output != nil {
+			contentbuf = output.StreamStart()
 		}
-		output.StreamEnd(buf)
+		sts, msg = a.LLM.SendMessages(cxt, a.PromptMessages)
+		if sts == LLM_STATUS_OK {
+			if contentbuf != nil {
+				contentbuf.WriteString(msg.Content)
+			}
+			if output != nil {
+				output.StreamDelta(contentbuf, msg.Content)
+			}
+		}
+		if output != nil {
+			output.StreamEnd(contentbuf)
+		}
 	} else {
-		sts, msg = a.LLM.SendMessagesStream(cxt, a.PendingMessages, output)
+		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, output)
 	}
 	a.ResponseStatus  = sts
 	a.ResponseMessage = msg

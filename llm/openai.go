@@ -411,7 +411,9 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 		}
 
 		delta := response.Choices[0].Delta.Content
-		contentbuf.WriteString(delta)
+		if contentbuf != nil {
+			contentbuf.WriteString(delta)
+		}
 		if reader != nil {
 			reader.StreamDelta(contentbuf, delta)
 		}
