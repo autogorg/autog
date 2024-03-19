@@ -25,26 +25,18 @@ func ExampleChatAgent() {
 	chat := &ChatAgent{}
 
 	system := &autog.PromptItem{
-		Name : "System",
-		GetMessages : func (query string) []autog.ChatMessage {
-			return []autog.ChatMessage{
-				autog.ChatMessage{
-					Role: autog.ROLE_SYSTEM,
-					Content: `你是一个echo机器人，总是原文返回我的问题，例如我的问题是："你好！"，你回答也必须是："你好！"`,
-				},
-			}
-		},
+		GetPrompt : func (query string) (role string, prompt string) {
+			return autog.ROLE_SYSTEM, `你是一个echo机器人，总是原文返回我的问题，例如我的问题是："你好！"，你回答也必须是："你好！"`
+		}
 	}
 
 	longHistory := &autog.PromptItem{
-		Name : "LongHistory",
 		GetMessages : func (query string) []autog.ChatMessage {
 			return chat.GetLongHistory()
 		},
 	}
 
 	shortHistory := &autog.PromptItem{
-		Name : "ShortHistory",
 		GetMessages : func (query string) []autog.ChatMessage {
 			return chat.GetShortHistory()
 		},
@@ -52,13 +44,13 @@ func ExampleChatAgent() {
 
 	summary := &autog.PromptItem{
 		GetPrompt : func (query string) (role string, prompt string) {
-			return autog.ROLE_SYSTEM, "用500字以内总计一下我们的历史对话！"
+			return "", "用500字以内总计一下我们的历史对话！"
 		}
 	}
 
 	prefix := &autog.PromptItem{
 		GetPrompt : func (query string) (role string, prompt string) {
-			return autog.ROLE_USER, "我们的历史对话总结如下："
+			return "", "我们的历史对话总结如下："
 		}
 	}
 
@@ -69,21 +61,28 @@ func ExampleChatAgent() {
 	}
 
 	output := &autog.Output{
+		WriteStreamStart: func() *strings.Builder {
+			return &strings.Builder{}
+		},
 		WriteStreamDelta: func(contentbuf *strings.Builder, delta string) {
 			fmt.Print(delta)
 		},
 		WriteStreamError: func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
 			fmt.Print(errstr)
 		},
+		WriteStreamEnd: func(contentbuf *strings.Builder) {
+			// You can get whole messsage by contentbuf.String()
+			return
+		},
 	}
 
 	chat.Prompt(system, longHistory, shortHistory).
-    ReadQuestion(nil, input).
+    ReadQuestion(nil, input, output).
     AskLLM(openai, false).
-    WaitResponse(nil, output).
+    WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-	Summarize(nil, )
+	Summarize(nil, summary, prefix, false)
 
 	// Output:
 	// 你好！

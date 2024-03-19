@@ -41,12 +41,13 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 	return a
 }
 
-func (a *Agent) ReadQuestion(cxt context.Context, input *Input) *Agent {
+func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) *Agent {
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
 	a.Input   = input
+	a.Output  = output
 	a.Request = input.doReadContent()
 	return a
 }
@@ -79,36 +80,35 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 	return a
 }
 
-func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
+func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
-	a.Output  = output
 	var sts LLMStatus
 	var msg ChatMessage
 	var contentbuf *strings.Builder
 	if !a.Stream {
-		if output != nil {
-			contentbuf = output.StreamStart()
+		if a.Output != nil {
+			contentbuf = a.Output.StreamStart()
 		}
 		sts, msg = a.LLM.SendMessages(cxt, a.PromptMessages)
 		if sts == LLM_STATUS_OK {
 			if contentbuf != nil {
 				contentbuf.WriteString(msg.Content)
 			}
-			if output != nil {
-				output.StreamDelta(contentbuf, msg.Content)
+			if a.Output != nil {
+				a.Output.StreamDelta(contentbuf, msg.Content)
 			}
 		}
-		if output != nil {
+		if a.Output != nil {
 			if sts != LLM_STATUS_OK {
-				output.StreamError(contentbuf, sts, msg.Content)
+				a.Output.StreamError(contentbuf, sts, msg.Content)
 			}
-			output.StreamEnd(contentbuf)
+			a.Output.StreamEnd(contentbuf)
 		}
 	} else {
-		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, output)
+		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, a.Output)
 	}
 	a.ResponseStatus  = sts
 	a.ResponseMessage = msg
@@ -118,38 +118,41 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	return a
 }
 
-func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, output *Output) *Agent {
+func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool) *Agent {
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
 
 	var contentbuf *strings.Builder
-	if output != nil {
-		contentbuf = output.StreamStart()
+	if a.Output != nil {
+		contentbuf = a.Output.StreamStart()
 	}
 	smy := &Summary{}
+	smy.DisableStream = false
+	_, smy.PromptSummary = summary.doGetPrompt(a.Request)
+	_, smy.PromptPrefix  = summary.doGetPrompt(a.Request)
 	if smy.InitSummary() != nil {
-		if output != nil {
-			output.StreamError(nil, LLM_STATUS_BED_MESSAGE, "InitSummary return nil!")
+		if a.Output != nil {
+			a.Output.StreamError(nil, LLM_STATUS_BED_MESSAGE, "InitSummary return nil!")
 		}
 		return a
 	}
-	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, false)
+	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, force)
 	if status != LLM_STATUS_OK {
-		if output != nil {
-			output.StreamError(contentbuf, status, "Summarize return error!")
-			output.StreamEnd(contentbuf)
+		if a.Output != nil {
+			a.Output.StreamError(contentbuf, status, "Summarize return error!")
+			a.Output.StreamEnd(contentbuf)
 		}
 		return a
 	}
-	if output != nil {
+	if a.Output != nil {
 		str := "Summarize Success!"
 		if contentbuf != nil {
 			contentbuf.WriteString(str)
 		}
-		output.StreamDelta(contentbuf, str)
-		output.StreamEnd(contentbuf)
+		a.Output.StreamDelta(contentbuf, str)
+		a.Output.StreamEnd(contentbuf)
 	}
 
 	a.LongHistoryMessages  = smsgs
