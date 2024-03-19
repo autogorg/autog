@@ -91,6 +91,9 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 			}
 		}
 		if output != nil {
+			if sts != LLM_STATUS_OK {
+				output.StreamError(contentbuf, sts, msg.Content)
+			}
 			output.StreamEnd(contentbuf)
 		}
 	} else {

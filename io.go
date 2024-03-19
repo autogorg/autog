@@ -18,7 +18,8 @@ func (i *Input) doReadContent() string {
 type Output struct {
 	WriteStreamStart func() *strings.Builder
 	WriteStreamDelta func(contentbuf *strings.Builder, delta string)
-	WriteStreamEnd func(contentbuf *strings.Builder)
+	WriteStreamError func(contentbuf *strings.Builder, status LLMStatus, errstr string)
+	WriteStreamEnd   func(contentbuf *strings.Builder)
 }
 
 func (o *Output) StreamStart() *strings.Builder {
@@ -33,6 +34,13 @@ func (o *Output) StreamDelta(contentbuf *strings.Builder, delta string) {
 		return
 	}
 	o.WriteStreamDelta(contentbuf, delta)
+}
+
+func (o *Output) StreamError(contentbuf *strings.Builder, status LLMStatus, errstr string) {
+	if o.WriteStreamError == nil {
+		return
+	}
+	o.WriteStreamError(contentbuf, status, errstr)
 }
 
 func (o *Output) StreamEnd(contentbuf *strings.Builder) {

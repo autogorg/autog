@@ -60,6 +60,9 @@ func ExampleChatAgent() {
 		WriteStreamDelta: func(contentbuf *strings.Builder, delta string) {
 			fmt.Print(delta)
 		},
+		WriteStreamError: func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+			fmt.Print(errstr)
+		},
 	}
 
 	chat.Prompt(system, longHistory, shortHistory).

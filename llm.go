@@ -42,6 +42,7 @@ func (cm *ChatMessage) String() string {
 type StreamReader interface {
 	StreamStart() *strings.Builder
 	StreamDelta(contentbuf *strings.Builder, delta string)
+	StreamError(contentbuf *strings.Builder, status LLMStatus, errstr string)
 	StreamEnd(contentbuf *strings.Builder)
 }
 

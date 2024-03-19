@@ -359,8 +359,17 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 		}
 	}
 
+	var contentbuf *strings.Builder
+	if reader != nil {
+		contentbuf = reader.StreamStart()
+	}
+
 	httpReq, err := gpt.CreateHttpRequest(cxt, "POST", "/chat/completions", request)
 	if err != nil {
+		if reader != nil {
+			reader.StreamError(contentbuf, autog.LLM_STATUS_BED_REQUEST, err.Error())
+			reader.StreamEnd(contentbuf)
+		}
 		return autog.LLM_STATUS_BED_REQUEST, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
 	}
 	httpClient   := gpt.httpMain
@@ -369,6 +378,10 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 	}
 	httpRsp, err := gpt.GetHttpResponse(httpClient, httpReq)
 	if err != nil {
+		if reader != nil {
+			reader.StreamError(contentbuf, autog.LLM_STATUS_BED_REQUEST, err.Error())
+			reader.StreamEnd(contentbuf)
+		}
 		return autog.LLM_STATUS_BED_RESPONSE, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
 	}
 	bufreader := bufio.NewReader(httpRsp.Body)
@@ -376,10 +389,6 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 
 	var readErr error
 	var line []byte
-	var contentbuf *strings.Builder
-	if reader != nil {
-		contentbuf = reader.StreamStart()
-	}
 	for {
 		line, readErr = bufreader.ReadBytes('\n')
 		if readErr != nil {
@@ -413,6 +422,9 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 		}
 	}
 	if reader != nil {
+		if readErr != nil {
+			reader.StreamError(contentbuf, autog.LLM_STATUS_BED_MESSAGE, readErr.Error())
+		}
 		reader.StreamEnd(contentbuf)
 	}
 
