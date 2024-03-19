@@ -42,6 +42,9 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 }
 
 func (a *Agent) ReadQuestion(cxt context.Context, input *Input) *Agent {
+	if cxt == nil {
+		cxt = context.Background()
+	}
 	a.Context = cxt
 	a.Input   = input
 	a.Request = input.doReadContent()
@@ -72,6 +75,9 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 }
 
 func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
+	if cxt == nil {
+		cxt = context.Background()
+	}
 	a.Context = cxt
 	a.Output  = output
 	var sts LLMStatus
