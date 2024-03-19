@@ -76,14 +76,14 @@ func ExampleChatAgent() {
 		},
 	}
 
-	chat.Prompt(system, longHistory, shortHistory).
+    chat.Prompt(system, longHistory, shortHistory).
     ReadQuestion(nil, input, output).
     AskLLM(openai, true). // stream = true
     WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-	Summarize(nil, summary, prefix, true, output) // force = true
+    Summarize(nil, summary, prefix, true, output) // force = true
 
-	// Output:
-	// 你好！
+    // Output:
+    // 你好！
 }
