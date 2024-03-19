@@ -30,7 +30,7 @@ func ExampleChatAgent() {
 			return []autog.ChatMessage{
 				autog.ChatMessage{
 					Role: autog.SYSTEM,
-					Content: `你是一个echo机器人，总是原文范围用户的问题，例如用户发送"你好！"，你回答也必须是"你好！"`,
+					Content: `你是一个echo机器人，总是原文返回我的问题，例如我的问题是："你好！"，你回答也必须是："你好！"`,
 				},
 			}
 		},
