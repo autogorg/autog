@@ -45,13 +45,13 @@ func ExampleChatAgent() {
 	summary := &autog.PromptItem{
 		GetPrompt : func (query string) (role string, prompt string) {
 			return "", "用500字以内总计一下我们的历史对话！"
-		}
+		},
 	}
 
 	prefix := &autog.PromptItem{
 		GetPrompt : func (query string) (role string, prompt string) {
 			return "", "我们的历史对话总结如下："
-		}
+		},
 	}
 
 	input := &autog.Input{
@@ -82,7 +82,7 @@ func ExampleChatAgent() {
     WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-	Summarize(nil, summary, prefix, false)
+	Summarize(nil, summary, prefix, false, output)
 
 	// Output:
 	// 你好！

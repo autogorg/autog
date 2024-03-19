@@ -1,6 +1,7 @@
 package autog
 
 import (
+	"fmt"
 	"strings"
 	"context"
 )
@@ -118,41 +119,39 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 	return a
 }
 
-func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool) *Agent {
+func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool, output *Output) *Agent {
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
 
 	var contentbuf *strings.Builder
-	if a.Output != nil {
-		contentbuf = a.Output.StreamStart()
+	if output != nil {
+		contentbuf = output.StreamStart()
 	}
 	smy := &Summary{}
+	smy.Cxt = cxt
+	smy.LLM = a.LLM
 	smy.DisableStream = false
 	_, smy.PromptSummary = summary.doGetPrompt(a.Request)
-	_, smy.PromptPrefix  = summary.doGetPrompt(a.Request)
-	if smy.InitSummary() != nil {
-		if a.Output != nil {
-			a.Output.StreamError(nil, LLM_STATUS_BED_MESSAGE, "InitSummary return nil!")
+	_, smy.PromptPrefix  = prefix.doGetPrompt(a.Request)
+	err := smy.InitSummary()
+	if err != nil {
+		if output != nil {
+			output.StreamError(contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
 		}
 		return a
 	}
 	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, force)
 	if status != LLM_STATUS_OK {
-		if a.Output != nil {
-			a.Output.StreamError(contentbuf, status, "Summarize return error!")
-			a.Output.StreamEnd(contentbuf)
+		if output != nil {
+			output.StreamError(contentbuf, status, "Summarize ERROR!")
+			output.StreamEnd(contentbuf)
 		}
 		return a
 	}
-	if a.Output != nil {
-		str := "Summarize Success!"
-		if contentbuf != nil {
-			contentbuf.WriteString(str)
-		}
-		a.Output.StreamDelta(contentbuf, str)
-		a.Output.StreamEnd(contentbuf)
+	if output != nil {
+		output.StreamEnd(contentbuf)
 	}
 
 	a.LongHistoryMessages  = smsgs
@@ -183,7 +182,7 @@ func (a *Agent) Reflection(doRef *DoReflection, retry int) *Agent {
 		doRef = &DoReflection {
 			Do : func (reflection string, retry int) {
 				a.AskReflection(reflection)
-				a.WaitResponse(nil, a.Output)
+				a.WaitResponse(nil)
 				a.Action(a.DoAction)
 				a.Reflection(doRef, retry)
 			},

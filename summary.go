@@ -58,7 +58,7 @@ func (s *Summary) TokenizeMessages(messages []ChatMessage) ([]TokenizedMessage, 
 
 func (s *Summary) AskLLM(msgs []ChatMessage) (LLMStatus, ChatMessage) {
 	if s.Cxt == nil || s.LLM == nil {
-		return LLM_STATUS_BED_REQUEST, []ChatMessage{}
+		return LLM_STATUS_BED_REQUEST, ChatMessage{}
 	}
 
 	if s.DisableStream {
@@ -87,21 +87,21 @@ func (s *Summary) SummarizeOnce(msgs []ChatMessage) (LLMStatus, []ChatMessage) {
 	}
 
 	content := contentbuf.String()
-	sysmessage  := ChatMessage{ Role: types.SYSTEM, Content: s.PromptSummary}
-	usermessage := ChatMessage{ Role: types.USER, Content: content}
+	sysmessage  := ChatMessage{ Role: ROLE_SYSTEM, Content: s.PromptSummary}
+	usermessage := ChatMessage{ Role: ROLE_USER, Content: content}
 	
-	status, summarymsg := s.AskLLM([]types.ChatMessage{sysmessage, usermessage})
+	status, summarymsg := s.AskLLM([]ChatMessage{sysmessage, usermessage})
 
-	if status != defs.STATUS_OK {
-		return status, []types.ChatMessage{summarymsg}
+	if status != LLM_STATUS_OK {
+		return status, []ChatMessage{summarymsg}
 	}
 	summaryprefix  := s.PromptPrefix
 	summarycontent := summaryprefix + summarymsg.Content
 
-	finalmessage := types.ChatMessage{ Role: types.USER, Content: summarycontent}
-	okmessage    := types.ChatMessage{ Role: types.ASSISTANT, Content: "OK"}
+	finalmessage := ChatMessage{ Role: ROLE_USER, Content: summarycontent}
+	okmessage    := ChatMessage{ Role: ROLE_ASSISTANT, Content: "OK"}
 
-	return status, []types.ChatMessage{finalmessage, okmessage}
+	return status, []ChatMessage{finalmessage, okmessage}
 }
 
 func (s *Summary) SummarizeSplit(force bool, msgs []ChatMessage, depth int) (LLMStatus, []ChatMessage) {
@@ -156,7 +156,7 @@ func (s *Summary) SummarizeSplit(force bool, msgs []ChatMessage, depth int) (LLM
 		return LLM_STATUS_OK, finalmsgs
 	}
 
-	return b.SummarizeSplit(force, finalmsgs, depth + 1)
+	return s.SummarizeSplit(force, finalmsgs, depth + 1)
 }
 
 func (s *Summary) Summarize(longHistory []ChatMessage, shortHistory []ChatMessage, force bool) (LLMStatus, []ChatMessage) {

@@ -363,6 +363,9 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 	if reader != nil {
 		contentbuf = reader.StreamStart()
 	}
+	if contentbuf == nil {
+		contentbuf = &strings.Builder{}
+	}
 
 	httpReq, err := gpt.CreateHttpRequest(cxt, "POST", "/chat/completions", request)
 	if err != nil {
