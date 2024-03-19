@@ -78,11 +78,11 @@ func ExampleChatAgent() {
 
 	chat.Prompt(system, longHistory, shortHistory).
     ReadQuestion(nil, input, output).
-    AskLLM(openai, false).
+    AskLLM(openai, true). // stream = true
     WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-	Summarize(nil, summary, prefix, false, output)
+	Summarize(nil, summary, prefix, true, output) // force = true
 
 	// Output:
 	// 你好！
