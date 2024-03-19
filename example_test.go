@@ -14,7 +14,7 @@ func ExampleChatAgent() {
 
 	openai := &llm.OpenAi{
 		ApiBase : "https://api.chatpp.org/v1",
-		ApiKey  : "sk-ae32368ec577de764f25ca39daac4fbd",
+		ApiKey  : "sk-***",
 	}
 	err := openai.InitLLM()
 	if err != nil {
