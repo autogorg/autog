@@ -25,10 +25,17 @@ const (
 )
 
 const (
-	SYSTEM    string = "system"
-	USER      string = "user"
-	ASSISTANT string = "assistant"
+	ROLE_SYSTEM    string = "system"
+	ROLE_USER      string = "user"
+	ROLE_ASSISTANT string = "assistant"
 )
+
+func IsValidRole(role string) bool {
+	if role == ROLE_SYSTEM || role == ROLE_USER || role == ROLE_ASSISTANT {
+		return true
+	}
+	return false
+}
 
 type ChatMessage struct {
 	Role string    `json:"role"`

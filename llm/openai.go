@@ -318,7 +318,7 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 
 	httpReq, err := gpt.CreateHttpRequest(cxt, "POST", "/chat/completions", request)
 	if err != nil {
-		return autog.LLM_STATUS_BED_REQUEST, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
+		return autog.LLM_STATUS_BED_REQUEST, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: err.Error()}
 	}
 	httpClient   := gpt.httpMain
 	if weak {
@@ -326,11 +326,11 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 	}
 	httpRsp, err := gpt.GetHttpResponse(httpClient, httpReq)
 	if err != nil {
-		return autog.LLM_STATUS_BED_RESPONSE, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
+		return autog.LLM_STATUS_BED_RESPONSE, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: err.Error()}
 	}
 	response := OpenaiChatCompletionResponse{}
 	if err := gpt.GetHttpBodyObject(httpRsp, &response); err != nil {
-		return autog.LLM_STATUS_BED_MESSAGE, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
+		return autog.LLM_STATUS_BED_MESSAGE, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: err.Error()}
 	}
 
 	if gpt.Verbose >= autog.VerboseShowReceiving {
@@ -370,7 +370,7 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 			reader.StreamError(contentbuf, autog.LLM_STATUS_BED_REQUEST, err.Error())
 			reader.StreamEnd(contentbuf)
 		}
-		return autog.LLM_STATUS_BED_REQUEST, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
+		return autog.LLM_STATUS_BED_REQUEST, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: err.Error()}
 	}
 	httpClient   := gpt.httpMain
 	if weak {
@@ -382,7 +382,7 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 			reader.StreamError(contentbuf, autog.LLM_STATUS_BED_REQUEST, err.Error())
 			reader.StreamEnd(contentbuf)
 		}
-		return autog.LLM_STATUS_BED_RESPONSE, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
+		return autog.LLM_STATUS_BED_RESPONSE, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: err.Error()}
 	}
 	bufreader := bufio.NewReader(httpRsp.Body)
 	defer httpRsp.Body.Close()
@@ -429,11 +429,11 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 	}
 
 	if readErr != nil {
-		return autog.LLM_STATUS_BED_MESSAGE, autog.ChatMessage{Role:autog.ASSISTANT, Content: readErr.Error()}
+		return autog.LLM_STATUS_BED_MESSAGE, autog.ChatMessage{Role:autog.ROLE_ASSISTANT, Content: readErr.Error()}
 	}
 
 	revMsg := autog.ChatMessage{
-		Role    : autog.ASSISTANT,
+		Role    : autog.ROLE_ASSISTANT,
 		Content : contentbuf.String(),
 	}
 

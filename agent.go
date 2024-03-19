@@ -53,11 +53,16 @@ func (a *Agent) ReadQuestion(cxt context.Context, input *Input) *Agent {
 
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 	var msgs []ChatMessage
-	msg := ChatMessage{ Role:USER, Content:a.Request }
+	msg := ChatMessage{ Role:ROLE_USER, Content:a.Request }
 	for _, pmt := range a.Prompts {
 		pms := pmt.doGetMessages(a.Request)
 		if len(pms) > 0 {
 			msgs = append(msgs, pms...)
+		}
+		role, prompt := pmt.doGetPrompt(a.Request)
+		if IsValidRole(role) && len(prompt) > 0 {
+			m := ChatMessage{ Role:role, Content:prompt }
+			msgs = append(msgs, m)
 		}
 	}
 	a.PromptMessages = msgs
@@ -68,7 +73,7 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 }
 
 func (a *Agent) AskReflection(reflection string) *Agent {
-	msg := ChatMessage{ Role:USER, Content:reflection }
+	msg := ChatMessage{ Role:ROLE_USER, Content:reflection }
 	a.PromptMessages = append(a.PromptMessages, msg)
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
 	return a
@@ -110,6 +115,46 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, a.ResponseMessage)
 	a.CanDoAction = a.ResponseStatus == LLM_STATUS_OK
 	a.CanDoReflection = false
+	return a
+}
+
+func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, output *Output) *Agent {
+	if cxt == nil {
+		cxt = context.Background()
+	}
+	a.Context = cxt
+
+	var contentbuf *strings.Builder
+	if output != nil {
+		contentbuf = output.StreamStart()
+	}
+	smy := &Summary{}
+	if smy.InitSummary() != nil {
+		if output != nil {
+			output.StreamError(nil, LLM_STATUS_BED_MESSAGE, "InitSummary return nil!")
+		}
+		return a
+	}
+	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, false)
+	if status != LLM_STATUS_OK {
+		if output != nil {
+			output.StreamError(contentbuf, status, "Summarize return error!")
+			output.StreamEnd(contentbuf)
+		}
+		return a
+	}
+	if output != nil {
+		str := "Summarize Success!"
+		if contentbuf != nil {
+			contentbuf.WriteString(str)
+		}
+		output.StreamDelta(contentbuf, str)
+		output.StreamEnd(contentbuf)
+	}
+
+	a.LongHistoryMessages  = smsgs
+	a.ShortHistoryMessages = []ChatMessage{}
+
 	return a
 }
 
