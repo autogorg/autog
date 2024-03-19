@@ -118,12 +118,6 @@ type OpenaiChatCompletionStreamResponse struct {
 	Usage   OpenaiChatCompletionsResponseUsage         `json:"usage"`
 }
 
-const (
-	VerboseNone int = iota
-	VerboseShowSending
-	VerboseShowReceiving
-)
-
 type OpenAi struct {
 	ApiKey      string
 	ApiBase     string
@@ -315,7 +309,7 @@ func (gpt *OpenAi) GetHttpBodyObject(httpRsp *http.Response, response interface{
 func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessage, weak bool) (autog.LLMStatus, autog.ChatMessage) {
 	request := gpt.CreateChatCompletionRequest(weak, false, msgs)
 
-	if gpt.Verbose >= VerboseShowSending {
+	if gpt.Verbose >= autog.VerboseShowSending {
 		reqstr, reqerr := json.Marshal(request)
 		if reqerr == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
@@ -339,7 +333,7 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 		return autog.LLM_STATUS_BED_MESSAGE, autog.ChatMessage{Role:autog.ASSISTANT, Content: err.Error()}
 	}
 
-	if gpt.Verbose >= VerboseShowReceiving {
+	if gpt.Verbose >= autog.VerboseShowReceiving {
 		repstr, reperr := json.Marshal(response)
 		if reperr == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("RECV_FROM_LLVM:\n %s \n", repstr))
@@ -358,7 +352,7 @@ func (gpt *OpenAi) SendMessagesInner(cxt context.Context, msgs []autog.ChatMessa
 func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.ChatMessage, reader autog.StreamReader, weak bool) (autog.LLMStatus, autog.ChatMessage) {
 	request := gpt.CreateChatCompletionRequest(weak, true, msgs)
 
-	if gpt.Verbose >= VerboseShowSending {
+	if gpt.Verbose >= autog.VerboseShowSending {
 		reqstr, reqerr := json.Marshal(request)
 		if reqerr == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
@@ -442,7 +436,7 @@ func (gpt *OpenAi) CalcTokens(cxt context.Context, content string) int {
 func (gpt *OpenAi) SendMessages(cxt context.Context, msgs []autog.ChatMessage) (autog.LLMStatus, autog.ChatMessage) {
 	status, msg := gpt.SendMessagesInner(cxt, msgs, false)
 
-	if gpt.Verbose >= VerboseShowReceiving {
+	if gpt.Verbose >= autog.VerboseShowReceiving {
 		msgstr, err := json.Marshal(msg)
 		if err == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
@@ -455,7 +449,7 @@ func (gpt *OpenAi) SendMessages(cxt context.Context, msgs []autog.ChatMessage) (
 func (gpt *OpenAi) SendMessagesStream(cxt context.Context, msgs []autog.ChatMessage, reader autog.StreamReader) (autog.LLMStatus, autog.ChatMessage) {
 	status, msg := gpt.SendMessagesStreamInner(cxt, msgs, reader, false)
 
-	if gpt.Verbose >= VerboseShowReceiving {
+	if gpt.Verbose >= autog.VerboseShowReceiving {
 		msgstr, err := json.Marshal(msg)
 		if err == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("RECEIVE_FROM_LLVM STATUS(%d)\n %s \n", status, msgstr))
