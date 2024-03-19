@@ -27,7 +27,7 @@ func ExampleChatAgent() {
 	system := &autog.PromptItem{
 		GetPrompt : func (query string) (role string, prompt string) {
 			return autog.ROLE_SYSTEM, `你是一个echo机器人，总是原文返回我的问题，例如我的问题是："你好！"，你回答也必须是："你好！"`
-		}
+		},
 	}
 
 	longHistory := &autog.PromptItem{
