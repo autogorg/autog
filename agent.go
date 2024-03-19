@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-type Agent {
+type Agent struct {
 	Prompts []*PromptItem
 	Request string
 	Context context.Context
@@ -44,18 +44,17 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 func (a *Agent) ReadQuestion(cxt context.Context, input *Input) *Agent {
 	a.Context = cxt
 	a.Input   = input
-	a.Request = input.doReadInput()
+	a.Request = input.doReadContent()
 	return a
 }
 
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 	var msgs []ChatMessage
 	msg := ChatMessage{ Role:USER, Content:a.Request }
-	// TODO: Summary Long & Short HistoryMessages
-	for pmt := range a.Prompts {
+	for _, pmt := range a.Prompts {
 		pms := pmt.doGetMessages(a.Request)
 		if len(pms) > 0 {
-			msgs = append(msgs, pms)
+			msgs = append(msgs, pms...)
 		}
 	}
 	a.PromptMessages = msgs
@@ -105,7 +104,7 @@ func (a *Agent) WaitResponse(cxt context.Context, output *Output) *Agent {
 	return a
 }
 
-func (a *Agent) DoAction(doAct *DoAction) *Agent {
+func (a *Agent) Action(doAct *DoAction) *Agent {
 	a.DoAction = doAct
 	if !a.CanDoAction {
 		return a
@@ -122,15 +121,15 @@ func (a *Agent) DoAction(doAct *DoAction) *Agent {
 	return a
 }
 
-func (a *Agent) DoReflection(doRef *DoReflection, retry int) *Agent {
+func (a *Agent) Reflection(doRef *DoReflection, retry int) *Agent {
 	if doRef == nil {
 		doRef = &DoReflection {
 			Do : func (reflection string, retry int) {
 				a.AskReflection(reflection)
 				a.WaitResponse(nil, a.Output)
-				a.DoAction(a.DoAction)
-				a.DoReflection(defRef)
-			}
+				a.Action(a.DoAction)
+				a.Reflection(doRef, retry)
+			},
 		}
 	}
 	a.DoReflection = doRef

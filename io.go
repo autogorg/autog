@@ -4,37 +4,40 @@ import (
 	"strings"
 )
 
-type Input {
+type Input struct {
 	ReadContent func() string
 }
 
-func (i *Input) func doReadContent() string {
+func (i *Input) doReadContent() string {
+	if i.ReadContent == nil {
+		return ""
+	}
 	return i.ReadContent()
 }
 
-type Output {
+type Output struct {
 	WriteStreamStart func() *strings.Builder
 	WriteStreamDelta func(contentbuf *strings.Builder, delta string)
 	WriteStreamEnd func(contentbuf *strings.Builder)
 }
 
-func (o *Output) func StreamStart() *strings.Builder {
+func (o *Output) StreamStart() *strings.Builder {
 	if o.WriteStreamStart == nil {
 		return nil
 	}
 	return o.WriteStreamStart()
 }
 
-func (o *Output) func StreamDelta(contentbuf *strings.Builder, delta string) {
+func (o *Output) StreamDelta(contentbuf *strings.Builder, delta string) {
 	if o.WriteStreamDelta == nil {
 		return
 	}
-	return o.WriteStreamDelta(contentbuf, delta)
+	o.WriteStreamDelta(contentbuf, delta)
 }
 
-func (o *Output) func StreamEnd(contentbuf *strings.Builder) {
+func (o *Output) StreamEnd(contentbuf *strings.Builder) {
 	if o.WriteStreamEnd == nil {
 		return
 	}
-	return o.WriteStreamEnd(contentbuf)
+	o.WriteStreamEnd(contentbuf)
 }

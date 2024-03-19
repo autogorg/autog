@@ -34,9 +34,9 @@ func (cm *ChatMessage) String() string {
 }
 
 type StreamReader interface {
-	StreamStart func() *strings.Builder
-	StreamDelta func(contentbuf *strings.Builder, delta string)
-	StreamEnd func(contentbuf *strings.Builder)
+	StreamStart() *strings.Builder
+	StreamDelta(contentbuf *strings.Builder, delta string)
+	StreamEnd(contentbuf *strings.Builder)
 }
 
 type LLM interface {

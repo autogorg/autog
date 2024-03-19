@@ -1,6 +1,6 @@
 package autog
 
-type PromptItem {
+type PromptItem struct {
 	Name string
 	GetMessages func (query string) []ChatMessage
 }

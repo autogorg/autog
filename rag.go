@@ -1,14 +1,20 @@
 package autog
 
-type Rag {
+type Rag struct {
 	Index func()
 	Retrieve func(query string) 
 }
 
 func (r *Rag) doIndex() {
-	return r.Index()
+	if r.Index == nil {
+		return
+	}
+	r.Index()
 }
 
 func (r *Rag) doRetrieve(query string) {
-	return r.Retrieve(query)
+	if r.Retrieve == nil {
+		return
+	}
+	r.Retrieve(query)
 }

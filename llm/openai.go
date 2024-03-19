@@ -11,11 +11,11 @@ import (
 	"net/http"
 	"crypto/tls"
 	"encoding/json"
-	"autog/autog"
+	"autog"
 )
 
 const (
-	defaultBaseURL        = "https://api.chatpp.org/v1"
+	defaultBaseURL        = "https://api.openai.com/v1"
 	defaultVendor         = "openai"
 	defaultModel          = "gpt-4-turbo-preview"
 	defaultModelWeak      = "gpt-4-turbo-preview"
@@ -149,10 +149,10 @@ func (gpt *OpenAi) InitLLM() error {
 		return fmt.Errorf("API Key is needed!")
 	}
 	if len(gpt.ApiBase) <= 0 {
-		gpt.ApiBase.ApiBase = defaultBaseURL
+		gpt.ApiBase = defaultBaseURL
 	}
-	if len(gpt.ApiBase.ApiVendor) <= 0 {
-		gpt.ApiBase.ApiVendor = defaultVendor
+	if len(gpt.ApiVendor) <= 0 {
+		gpt.ApiVendor = defaultVendor
 	}
 	if len(gpt.Model) <= 0 {
 		gpt.Model = defaultModel
@@ -360,7 +360,7 @@ func (gpt *OpenAi) SendMessagesStreamInner(cxt context.Context, msgs []autog.Cha
 
 	if gpt.Verbose >= VerboseShowSending {
 		reqstr, reqerr := json.Marshal(request)
-		if reqerr == nil && gpt.VerboseLog {
+		if reqerr == nil && gpt.VerboseLog != nil {
 			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
 		}
 	}

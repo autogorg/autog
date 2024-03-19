@@ -1,7 +1,7 @@
 package autog
 
 
-type Action {
+type Action struct {
 	Name string
 	Desc string
 	NeedRun func (content string) (need bool)
@@ -21,7 +21,7 @@ func (a *Action) doRun(content string, payload interface{}) (ok bool, err string
 	return a.Run(content, payload)
 }
 
-type DoAction {
+type DoAction struct {
 	Do func(content string) (ok bool, reflection string)
 }
 
