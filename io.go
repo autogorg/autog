@@ -16,10 +16,18 @@ func (i *Input) doReadContent() string {
 }
 
 type Output struct {
+	WriteAgentStage  func(stage AgentStage)
 	WriteStreamStart func() *strings.Builder
 	WriteStreamDelta func(contentbuf *strings.Builder, delta string)
 	WriteStreamError func(contentbuf *strings.Builder, status LLMStatus, errstr string)
 	WriteStreamEnd   func(contentbuf *strings.Builder)
+}
+
+func (o *Output) AgentStage(stage AgentStage) {
+	if o.WriteAgentStage == nil {
+		return
+	}
+	o.WriteAgentStage(stage)
 }
 
 func (o *Output) StreamStart() *strings.Builder {

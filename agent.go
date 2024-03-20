@@ -6,6 +6,18 @@ import (
 	"context"
 )
 
+type AgentStage int
+
+const (
+	AsReadQuestion AgentStage = iota
+	AsAskLLM
+	AsAskReflection
+	AsWaitResponse
+	AsAction
+	AsReflection
+	AsSummarize
+)
+
 type Agent struct {
 	Prompts []*PromptItem
 	Request string
@@ -26,6 +38,41 @@ type Agent struct {
 	DoReflection *DoReflection
 }
 
+func OutputAgentStage(output *Output, stage AgentStage) {
+	if output != nil {
+		output.AgentStage(contentbuf, stage)
+	}
+}
+
+func OutputStreamStart(output *Output) *strings.Builder {
+	if output != nil {
+		return output.StreamStart()
+	}
+	return &strings.Builder{}
+}
+
+func OutputStreamDelta(output *Output, contentbuf *strings.Builder, delta string) {
+	if contentbuf != nil {
+		contentbuf.WriteString(delta)
+	}
+	if output != nil {
+		output.StreamDelta(contentbuf, delta)
+	}
+}
+
+func OutputStreamError(output *Output, contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+	if output != nil {
+		output.StreamDelta(contentbuf, status, errstr)
+	}
+}
+
+func OutputStreamEnd(output *Output, contentbuf *strings.Builder) {
+	if output != nil {
+		output.StreamEnd(contentbuf)
+	}
+}
+
+
 func (a *Agent) GetLongHistory() []ChatMessage {
 	return a.LongHistoryMessages
 }
@@ -43,6 +90,7 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 }
 
 func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) *Agent {
+	OutputAgentStage(output, AsReadQuestion)
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -54,6 +102,7 @@ func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) 
 }
 
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
+	OutputAgentStage(a.Output, AsAskLLM)
 	var msgs []ChatMessage
 	msg := ChatMessage{ Role:ROLE_USER, Content:a.Request }
 	for _, pmt := range a.Prompts {
@@ -75,6 +124,11 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 }
 
 func (a *Agent) AskReflection(reflection string) *Agent {
+	OutputAgentStage(a.Output, AsAskReflection)
+	var contentbuf *strings.Builder
+	contentbuf = OutputStreamStart(a.Output)
+	OutputStreamDelta(a.Output, contentbuf, reflection)
+	OutputStreamEnd(a.Output, contentbuf)
 	msg := ChatMessage{ Role:ROLE_USER, Content:reflection }
 	a.PromptMessages = append(a.PromptMessages, msg)
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
@@ -82,6 +136,7 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 }
 
 func (a *Agent) WaitResponse(cxt context.Context) *Agent {
+	OutputAgentStage(a.Output, AsWaitResponse)
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -90,24 +145,14 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 	var msg ChatMessage
 	var contentbuf *strings.Builder
 	if !a.Stream {
-		if a.Output != nil {
-			contentbuf = a.Output.StreamStart()
-		}
+		contentbuf = OutputStreamStart(a.Output)
 		sts, msg = a.LLM.SendMessages(cxt, a.PromptMessages)
 		if sts == LLM_STATUS_OK {
-			if contentbuf != nil {
-				contentbuf.WriteString(msg.Content)
-			}
-			if a.Output != nil {
-				a.Output.StreamDelta(contentbuf, msg.Content)
-			}
+			OutputStreamDelta(a.Output, contentbuf, msg.Content)
+		} else {
+			OutputStreamError(a.Output, contentbuf, sts, msg.Content)
 		}
-		if a.Output != nil {
-			if sts != LLM_STATUS_OK {
-				a.Output.StreamError(contentbuf, sts, msg.Content)
-			}
-			a.Output.StreamEnd(contentbuf)
-		}
+		OutputStreamEnd(a.Output, contentbuf)
 	} else {
 		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, a.Output)
 	}
@@ -119,40 +164,34 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 	return a
 }
 
-func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool, output *Output) *Agent {
+func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool) *Agent {
+	OutputAgentStage(a.Output, AsSummarize)
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
-
 	var contentbuf *strings.Builder
-	if output != nil {
-		contentbuf = output.StreamStart()
-	}
 	smy := &Summary{}
 	smy.Cxt = cxt
 	smy.LLM = a.LLM
 	smy.DisableStream = false
 	_, smy.PromptSummary = summary.doGetPrompt(a.Request)
 	_, smy.PromptPrefix  = prefix.doGetPrompt(a.Request)
+
+	contentbuf = OutputStreamStart(a.Output)
 	err := smy.InitSummary()
 	if err != nil {
-		if output != nil {
-			output.StreamError(contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
-		}
+		OutputStreamError(a.Output, contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
+		OutputStreamEnd(a.Output, contentbuf)
 		return a
 	}
 	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, force)
 	if status != LLM_STATUS_OK {
-		if output != nil {
-			output.StreamError(contentbuf, status, "Summarize ERROR!")
-			output.StreamEnd(contentbuf)
-		}
+		OutputStreamError(a.Output, contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("Summarize ERROR!"))
+		OutputStreamEnd(a.Output, contentbuf)
 		return a
 	}
-	if output != nil {
-		output.StreamEnd(contentbuf)
-	}
+	OutputStreamEnd(a.Output, contentbuf)
 
 	a.LongHistoryMessages  = smsgs
 	a.ShortHistoryMessages = []ChatMessage{}
@@ -161,6 +200,7 @@ func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *Prom
 }
 
 func (a *Agent) Action(doAct *DoAction) *Agent {
+	OutputAgentStage(a.Output, AsAction)
 	a.DoAction = doAct
 	if !a.CanDoAction {
 		return a
@@ -178,11 +218,12 @@ func (a *Agent) Action(doAct *DoAction) *Agent {
 }
 
 func (a *Agent) Reflection(doRef *DoReflection, retry int) *Agent {
+	OutputAgentStage(a.Output, AsReflection)
 	if doRef == nil {
 		doRef = &DoReflection {
 			Do : func (reflection string, retry int) {
 				a.AskReflection(reflection)
-				a.WaitResponse(nil)
+				a.WaitResponse(a.Context)
 				a.Action(a.DoAction)
 				a.Reflection(doRef, retry)
 			},

@@ -82,7 +82,7 @@ func ExampleChatAgent() {
     WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-    Summarize(nil, summary, prefix, true, output) // force = true
+    Summarize(nil, summary, prefix, true) // force = true
 
     // Output:
     // 你好！
