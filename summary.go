@@ -18,6 +18,8 @@ type TokenizedMessage struct {
 
 type Summary struct {
 	Cxt context.Context
+	Output    *Output
+	OutputBuf *strings.Builder
 	LLM LLM
 	PromptSummary string
 	PromptPrefix  string
@@ -26,6 +28,21 @@ type Summary struct {
 
 	MinSplit    int
 	MaxDepth    int
+}
+
+func OutputSummaryContent(output *Output, contentbuf *strings.Builder, delta string) {
+	if contentbuf != nil {
+		contentbuf.WriteString(delta)
+	}
+	if output != nil {
+		output.StreamDelta(contentbuf, delta)
+	}
+}
+
+func OutputSummaryError(output *Output, contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+	if output != nil {
+		output.StreamDelta(contentbuf, status, errstr)
+	}
 }
 
 func (s *Summary) InitSummary() error {
@@ -70,6 +87,7 @@ func (s *Summary) AskLLM(msgs []ChatMessage) (LLMStatus, ChatMessage) {
 
 func (s *Summary) SummarizeOnce(msgs []ChatMessage) (LLMStatus, []ChatMessage) {
 	if len(s.PromptSummary) <= 0 || len(s.PromptPrefix) <= 0 {
+		OutputSummaryError(s.Output, s.OutputBuf, LLM_STATUS_BED_MESSAGE, "Summary prompt or prefix invalid!")
 		return LLM_STATUS_BED_MESSAGE, []ChatMessage{}
 	}
 	contentbuf := strings.Builder{}
@@ -93,6 +111,7 @@ func (s *Summary) SummarizeOnce(msgs []ChatMessage) (LLMStatus, []ChatMessage) {
 	status, summarymsg := s.AskLLM([]ChatMessage{sysmessage, usermessage})
 
 	if status != LLM_STATUS_OK {
+		OutputSummaryError(s.Output, s.OutputBuf, status, summarymsg.Content)
 		return status, []ChatMessage{summarymsg}
 	}
 	summaryprefix  := s.PromptPrefix
@@ -101,11 +120,13 @@ func (s *Summary) SummarizeOnce(msgs []ChatMessage) (LLMStatus, []ChatMessage) {
 	finalmessage := ChatMessage{ Role: ROLE_USER, Content: summarycontent}
 	okmessage    := ChatMessage{ Role: ROLE_ASSISTANT, Content: "OK"}
 
+	OutputSummaryContent(s.Output, s.OutputBuf, status, summarycontent)
 	return status, []ChatMessage{finalmessage, okmessage}
 }
 
 func (s *Summary) SummarizeSplit(force bool, msgs []ChatMessage, depth int) (LLMStatus, []ChatMessage) {
 	if s.Cxt == nil || s.LLM == nil {
+		OutputSummaryError(s.Output, s.OutputBuf, LLM_STATUS_BED_MESSAGE, "Summary parameter invalid!")
 		return LLM_STATUS_BED_MESSAGE, []ChatMessage{}
 	}
 	tokenized, total := s.TokenizeMessages(msgs)

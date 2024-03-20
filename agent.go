@@ -171,14 +171,16 @@ func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *Prom
 	}
 	a.Context = cxt
 	var contentbuf *strings.Builder
+	contentbuf = OutputStreamStart(a.Output)
 	smy := &Summary{}
 	smy.Cxt = cxt
 	smy.LLM = a.LLM
+	smy.Output    = a.Output
+	smy.OutputBuf = contentbuf
 	smy.DisableStream = false
 	_, smy.PromptSummary = summary.doGetPrompt(a.Request)
 	_, smy.PromptPrefix  = prefix.doGetPrompt(a.Request)
 
-	contentbuf = OutputStreamStart(a.Output)
 	err := smy.InitSummary()
 	if err != nil {
 		OutputStreamError(a.Output, contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
@@ -187,7 +189,6 @@ func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *Prom
 	}
 	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, force)
 	if status != LLM_STATUS_OK {
-		OutputStreamError(a.Output, contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("Summarize ERROR!"))
 		OutputStreamEnd(a.Output, contentbuf)
 		return a
 	}
