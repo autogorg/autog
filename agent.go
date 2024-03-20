@@ -38,9 +38,9 @@ type Agent struct {
 	DoReflection *DoReflection
 }
 
-func OutputAgentStage(output *Output, stage AgentStage) {
+func OutputChangeAgentStage(output *Output, stage AgentStage) {
 	if output != nil {
-		output.AgentStage(contentbuf, stage)
+		output.ChangeAgentStage(contentbuf, stage)
 	}
 }
 
@@ -90,7 +90,7 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 }
 
 func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) *Agent {
-	OutputAgentStage(output, AsReadQuestion)
+	OutputChangeAgentStage(output, AsReadQuestion)
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -102,7 +102,7 @@ func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) 
 }
 
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
-	OutputAgentStage(a.Output, AsAskLLM)
+	OutputChangeAgentStage(a.Output, AsAskLLM)
 	var msgs []ChatMessage
 	msg := ChatMessage{ Role:ROLE_USER, Content:a.Request }
 	for _, pmt := range a.Prompts {
@@ -124,7 +124,7 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 }
 
 func (a *Agent) AskReflection(reflection string) *Agent {
-	OutputAgentStage(a.Output, AsAskReflection)
+	OutputChangeAgentStage(a.Output, AsAskReflection)
 	var contentbuf *strings.Builder
 	contentbuf = OutputStreamStart(a.Output)
 	OutputStreamDelta(a.Output, contentbuf, reflection)
@@ -136,7 +136,7 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 }
 
 func (a *Agent) WaitResponse(cxt context.Context) *Agent {
-	OutputAgentStage(a.Output, AsWaitResponse)
+	OutputChangeAgentStage(a.Output, AsWaitResponse)
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -165,7 +165,7 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 }
 
 func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool) *Agent {
-	OutputAgentStage(a.Output, AsSummarize)
+	OutputChangeAgentStage(a.Output, AsSummarize)
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -201,7 +201,7 @@ func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *Prom
 }
 
 func (a *Agent) Action(doAct *DoAction) *Agent {
-	OutputAgentStage(a.Output, AsAction)
+	OutputChangeAgentStage(a.Output, AsAction)
 	a.DoAction = doAct
 	if !a.CanDoAction {
 		return a
@@ -219,7 +219,7 @@ func (a *Agent) Action(doAct *DoAction) *Agent {
 }
 
 func (a *Agent) Reflection(doRef *DoReflection, retry int) *Agent {
-	OutputAgentStage(a.Output, AsReflection)
+	OutputChangeAgentStage(a.Output, AsReflection)
 	if doRef == nil {
 		doRef = &DoReflection {
 			Do : func (reflection string, retry int) {

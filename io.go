@@ -16,6 +16,7 @@ func (i *Input) doReadContent() string {
 }
 
 type Output struct {
+	AgentStage AgentStage
 	WriteAgentStage  func(stage AgentStage)
 	WriteStreamStart func() *strings.Builder
 	WriteStreamDelta func(contentbuf *strings.Builder, delta string)
@@ -23,7 +24,8 @@ type Output struct {
 	WriteStreamEnd   func(contentbuf *strings.Builder)
 }
 
-func (o *Output) AgentStage(stage AgentStage) {
+func (o *Output) ChangeAgentStage(stage AgentStage) {
+	o.AgentStage = stage
 	if o.WriteAgentStage == nil {
 		return
 	}

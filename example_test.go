@@ -68,7 +68,9 @@ func ExampleChatAgent() {
 			fmt.Print(delta)
 		},
 		WriteStreamError: func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
-			fmt.Print(errstr)
+			if output.AgentStage == WaitResponse {
+				fmt.Print(errstr)
+			}
 		},
 		WriteStreamEnd: func(contentbuf *strings.Builder) {
 			// You can get whole messsage by contentbuf.String()
@@ -82,7 +84,7 @@ func ExampleChatAgent() {
     WaitResponse(nil).
     Action(nil).
     Reflection(nil, 3).
-    Summarize(nil, summary, prefix, false) // force = false
+    Summarize(nil, summary, prefix, true) // force = false
 
     // Output:
     // 你好！
