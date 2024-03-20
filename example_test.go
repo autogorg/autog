@@ -60,22 +60,21 @@ func ExampleChatAgent() {
 		},
 	}
 
-	output := &autog.Output{
-		WriteStreamStart: func() *strings.Builder {
-			return &strings.Builder{}
-		},
-		WriteStreamDelta: func(contentbuf *strings.Builder, delta string) {
+	output := &autog.Output{}
+	output.WriteStreamStart = func() *strings.Builder {
+		return &strings.Builder{}
+	}
+	output.WriteStreamDelta = func(contentbuf *strings.Builder, delta string) {
+		if output.AgentStage == autog.AsWaitResponse {
 			fmt.Print(delta)
-		},
-		WriteStreamError: func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
-			if output.AgentStage == WaitResponse {
-				fmt.Print(errstr)
-			}
-		},
-		WriteStreamEnd: func(contentbuf *strings.Builder) {
-			// You can get whole messsage by contentbuf.String()
-			return
-		},
+		}
+	}
+	output.WriteStreamError = func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+		fmt.Print(errstr)
+	}
+	output.WriteStreamEnd = func(contentbuf *strings.Builder) {
+		// You can get whole messsage by contentbuf.String()
+		return
 	}
 
     chat.Prompt(system, longHistory, shortHistory).
