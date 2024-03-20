@@ -17,3 +17,9 @@ AutoG is a lightweight, complete, and open agent development framework
     Reflection(nil, 3).
     Summarize(nil, summary, prefix, true) // force = true
 ```
+
+# AutoG是一个轻量、完整、开放的代理开发框架
+
+- 轻量：纯Go语言开发，无任何第三方依赖。
+- 完整：灵活的提示工程框架，支持长短期记忆、计划、行动和反思能力。
+- 开放：默认与 OpenAI 的 API 对接，但可以轻松与任何其他模型对接。
