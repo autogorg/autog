@@ -1,6 +1,7 @@
-# autog
+# AutoG
 
-AutoG的是一个轻量、完备、开放的Agent开发框架：
-1、轻量：纯Go语言开发且无任何第三方依赖；
-2、完备：除了具备提示词动态调整模板框架、长短期期记忆、记忆总结等能力外，还具备规划、行动、反思等能力；
-3、开放：可扩展性强，预留了RAG接口，可以方便对接任何向量数据库；默认对接OpenAI的API，但可以方便的对接其它任何模型；
+AutoG is a lightweight, complete, and open agent development framework
+
+- Lightweight: Developed purely in Go language without any third-party dependencies.
+- Complete: In addition to having capabilities like dynamic adjustment of prompt words in the template framework, short and long-term memory, memory summary, it also has planning, acting, and reflecting capabilities.
+- Open: Highly extensible, it reserves a RAG interface for easy integration with any vector database; it defaults to interfacing with OpenAI's API, but can easily interface with any other model.
