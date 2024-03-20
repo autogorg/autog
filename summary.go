@@ -39,9 +39,9 @@ func OutputSummaryContent(output *Output, contentbuf *strings.Builder, delta str
 	}
 }
 
-func OutputSummaryError(output *Output, contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+func OutputSummaryError(output *Output, contentbuf *strings.Builder, status LLMStatus, errstr string) {
 	if output != nil {
-		output.StreamDelta(contentbuf, status, errstr)
+		output.StreamError(contentbuf, status, errstr)
 	}
 }
 
@@ -120,7 +120,7 @@ func (s *Summary) SummarizeOnce(msgs []ChatMessage) (LLMStatus, []ChatMessage) {
 	finalmessage := ChatMessage{ Role: ROLE_USER, Content: summarycontent}
 	okmessage    := ChatMessage{ Role: ROLE_ASSISTANT, Content: "OK"}
 
-	OutputSummaryContent(s.Output, s.OutputBuf, status, summarycontent)
+	OutputSummaryContent(s.Output, s.OutputBuf, summarycontent)
 	return status, []ChatMessage{finalmessage, okmessage}
 }
 

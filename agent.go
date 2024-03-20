@@ -40,7 +40,7 @@ type Agent struct {
 
 func OutputChangeAgentStage(output *Output, stage AgentStage) {
 	if output != nil {
-		output.ChangeAgentStage(contentbuf, stage)
+		output.ChangeAgentStage(stage)
 	}
 }
 
@@ -60,9 +60,9 @@ func OutputStreamDelta(output *Output, contentbuf *strings.Builder, delta string
 	}
 }
 
-func OutputStreamError(output *Output, contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
+func OutputStreamError(output *Output, contentbuf *strings.Builder, status LLMStatus, errstr string) {
 	if output != nil {
-		output.StreamDelta(contentbuf, status, errstr)
+		output.StreamError(contentbuf, status, errstr)
 	}
 }
 
