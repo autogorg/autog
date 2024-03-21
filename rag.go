@@ -1,14 +1,14 @@
 package autog
 
+type Embedding []float64
 
 type LocalDatabase interface {
-	AddDocument(doc Document)
+	AddDocument(doc Document) (path string)
 	GetDocument(path string)
 	DelDocument(path string)
-	GetDocumentChunks(path string) []Chunk
 	GetDocumentChunk(path string, idx int) Chunk
-	GetDocuments() []Document
-	GetChunks() []Chunk
+	GetDocumentChunks(path string) []Chunk
+	GetDocumentEmbeddings(path string) []Embedding
 }
 
 type Chunk struct {
@@ -24,6 +24,7 @@ type Document struct {
 	Path    string  `json:"Path"`
 	Title   string  `json:"Title"`
 	Desc    string  `json:"Desc"`
+	Text    string  `json:"Text"`
 	Chunks  []Chunk `json:"Chunks"`
 }
 
