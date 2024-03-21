@@ -75,23 +75,29 @@ func (md *MemoryDatabase) GetDocumentChunk(path string, idx int) (Chunk, error) 
 	return doc.Chunks[idx], nil
 }
 
-func (md *MemoryDatabase) GetDocumentChunks(path string) ([]Chunk, error) {
+func (md *MemoryDatabase) GetDocumentChunks(path string) ([]Chunk, []Embedding, error) {
 	var chunks []Chunk
-	doc, ok := md.PathToDocument[path];
-	if !ok {
-		return chunks, fmt.Errorf(ErrDocNotExists)
-	}
-	return doc.Chunks, nil
-}
-
-func (md *MemoryDatabase) GetDocumentEmbeddings(path string) ([]Embedding, error) {
 	var embeddings []Embedding
 	doc, ok := md.PathToDocument[path];
 	if !ok {
-		return embeddings, fmt.Errorf(ErrDocNotExists)
+		return chunks, embeddings, fmt.Errorf(ErrDocNotExists)
 	}
 	for _, chunk := range doc.Chunks {
 		embeddings = append(embeddings, chunk.Embedding)
 	}
-	return embeddings, nil
+	return doc.Chunks, embeddings, nil
 }
+
+func (md *MemoryDatabase) GetDatabaseChunks() ([]Chunk, []Embedding, error) {
+	var chunks []Chunk
+	var embeddings []Embedding
+	for path, doc := range md {
+		for _, chunk := range doc.Chunks {
+			chunks = append(chunks, chunk)
+			embeddings = append(embeddings, chunk.Embedding)
+		}
+	}
+
+	return chunks, embeddings, nil
+}
+
