@@ -1,7 +1,7 @@
 package autog
 
 
-type MemoryDatabase interface {
+type LocalDatabase interface {
 	AddDoc(doc Document)
 	GetDoc(path string)
 	DelDoc(path string)
