@@ -2,11 +2,12 @@ package autog
 
 
 type LocalDatabase interface {
-	AddDoc(doc Document)
-	GetDoc(path string)
-	DelDoc(path string)
-	GetDocChunks(path string) []Chunk
-	GetDocChunk(path string, idx int) Chunk
+	AddDocument(doc Document)
+	GetDocument(path string)
+	DelDocument(path string)
+	GetDocumentChunks(path string) []Chunk
+	GetDocumentChunk(path string, idx int) Chunk
+	GetDocuments() []Document
 	GetChunks() []Chunk
 }
 
