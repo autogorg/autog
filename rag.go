@@ -1,14 +1,19 @@
 package autog
 
+import (
+    "time"
+)
+
 type Embedding []float64
 
 type LocalDatabase interface {
-	AddDocument(doc Document) (path string)
-	GetDocument(path string)
-	DelDocument(path string)
-	GetDocumentChunk(path string, idx int) Chunk
-	GetDocumentChunks(path string) []Chunk
-	GetDocumentEmbeddings(path string) []Embedding
+	AddDocument(doc Document) (path string, error)
+	GetDocument(path string) (Document, error)
+	DelDocument(path string) error
+	GetDocumentPaths() ([]string, error)
+	GetDocumentChunk(path string, idx int) (Chunk, error)
+	GetDocumentChunks(path string) ([]Chunk, error)
+	GetDocumentEmbeddings(path string) ([]Embedding, error) 
 }
 
 type Chunk struct {
@@ -21,11 +26,12 @@ type Chunk struct {
 }
 
 type Document struct {
-	Path    string  `json:"Path"`
-	Title   string  `json:"Title"`
-	Desc    string  `json:"Desc"`
-	Text    string  `json:"Text"`
-	Chunks  []Chunk `json:"Chunks"`
+	Path    string     `json:"Path"`
+	Title   string     `json:"Title"`
+	Desc    string     `json:"Desc"`
+	Text    string     `json:"Text"`
+	Time    time.Time  `json:"Time"`
+	Chunks  []Chunk    `json:"Chunks"`
 }
 
 type Rag struct {
