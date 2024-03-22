@@ -17,6 +17,11 @@ const (
 	ErrChunkNotExists  = "Chunk not exists!"
 )
 
+type Document struct {
+	Path    string     `json:"Path"`
+	Chunks  []Chunk    `json:"Chunks"`
+}
+
 type MemoryDatabase struct {
 	PathToDocument map[string]autog.Document
 }
@@ -25,7 +30,7 @@ type MemoryDatabase struct {
 func generateRamdomPath() string {
     currentTime := time.Now()
     timeString := currentTime.Format(time.RFC3339)
-	return fmt.Sprintf("md5-%x", md5.Sum([]byte(timeString)))
+    return fmt.Sprintf("md5-%x", md5.Sum([]byte(timeString)))
 }
 
 func min(a, b int) int {
@@ -130,10 +135,15 @@ func (md *MemoryDatabase) GetDatabaseChunks() ([]Chunk, []Embedding, error) {
 	return chunks, embeddings, nil
 }
 
-func (md *MemoryDatabase) AddChunks(path string, []Chunk) error {
+func (md *MemoryDatabase) AddChunks(path string, chunks []Chunk) error {
+    doc := Document{
+        Path   : path,
+        Chunks : chunks,
+    }
+    return md.AddDocument(doc)
 }
 
-func (md *MemoryDatabase) SearchChunks(path string, embeds []Embedding) {
+func (md *MemoryDatabase) SearchChunks(path string, embeds []Embedding) ([]ScoredChunks, error) {
 	qnorms := Norms(qembeds)
 
 	var dbchunks []Chunk
