@@ -134,6 +134,56 @@ func (md *MemoryDatabase) AddChunks(path string, []Chunk) error {
 }
 
 func (md *MemoryDatabase) SearchChunks(path string, embeds []Embedding) {
+	qnorms := Norms(qembeds)
+
+	var dbchunks []Chunk
+	var dbembeds []Embedding
+	var dberr error
+	if docPath == DOCUMENT_PATH_NONE {
+		dbchunks, dbembeds, dberr = r.Database.GetDatabaseChunks()
+	} else {
+		dbchunks, dbembeds, dberr = r.Database.GetDocumentChunks(docPath)
+	}
+	if dberr != nil {
+		return scoreds, dberr
+	}
+	dbnorms := Norms(dbembeds)
+
+	qnum  := len(queries)
+	channel := make(chan []ScoredChunks)
+	scoreds = make([]ScoredChunks, qnum)
+
+	var wg sync.WaitGroup
+	const qbatch = 100
+	const dbatch = 1000
+	for qi := 0; qi < len(qembeds); qi += qbatch {
+		for dbi := 0; dbi < len(dbembeds); dbi += dbatch {
+			qj := min(qi + qbatch, len(qembeds))
+			dj := min(di + dbatch, len(dembeds))
+
+			wg.Add(1)
+			go func(qi int, di int, qj int, dj int) {
+				wg.Done()
+				CosSim(qembeds[qi:qj], dbembeds[di:dj], &qnorms, &dbnorms, qi, di, topk, channel)
+			}(qi, di, qj, dj)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(channel)
+	}()
+
+	cnt := 0
+	for cscores := range channel {
+		for ci := range cscores {
+			idx := ci + cnt * qbatch
+			if idx < len(scoreds) {
+				scoreds[idx] = cscores[qi]
+			}
+		}
+		cnt++
+	}
 }
 
 
