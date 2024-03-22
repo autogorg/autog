@@ -4,9 +4,9 @@ import (
     "time"
 )
 
-const （
+const (
     DOCUMENT_PATH_NONE = ""
-）
+)
 
 type Embedding []float64
 
@@ -45,7 +45,7 @@ type Document struct {
 }
 
 type Splitter interface {
-	CreateDocument(path string，title string, desc string, content string) *Document
+	CreateDocument(path string, title string, desc string, content string) *Document
 }
 
 type EmbeddingModel interface {
@@ -59,7 +59,7 @@ type Rag struct {
 	PostRank func (r *Rag, chunks []ScoredChunk) []ScoredChunk
 }
 
-func (r *Rag) Indexing(path stribg，title string, desc string, content string) *Document {
+func (r *Rag) Indexing(path stribg, title string, desc string, content string) *Document {
 	return nil
 }
 
