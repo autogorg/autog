@@ -14,29 +14,34 @@ const (
 type Embedding []float64
 
 type Database interface {
-	AddChunks(path string, []Chunk) error
+	AddDocument(path string, doc Document) error
 	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
 
 type ScoredChunk {
-	Chunk *Chunk
+	Chunk Chunk
 	Score float64
 }
 
 type ScoredChunks []ScoredChunk
 
-type Chunk struct {
-	Index     int       `json:"Index"`
-	Path      string    `json:"DocPath"`
-	Query     string    `json:"Query"`
-	Content   string    `json:"Content"`
-	ByteStart int       `json:"ByteStart"`
-	ByteEnd   int       `json:"ByteEnd"`
-	Embedding []float64 `json:"Embedding"`
+type Chunk interface {
+	Index() int
+	Path() string
+	Query() string
+	GetEmbedding() Embedding
+	SetEmbedding(embed Embedding)
+}
+
+type Document interface {
+	Path() string
+	Content() string
+	GetChunks() []Chunk
+	SetChunks(chunks []Chunk)
 }
 
 type Splitter interface {
-	CreateChunks(path string, content string) ([]Chunk, error)
+	FillChunks(doc Document) (error)
 }
 
 type EmbeddingModel interface {
@@ -45,7 +50,6 @@ type EmbeddingModel interface {
 
 type Rag struct {
 	Database Database
-	Splitter Splitter
 	EmbeddingModel EmbeddingModel
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
@@ -79,16 +83,16 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 	return embeds, err
 }
 
-func (r *Rag) Indexing(path stribg, content string) ([]Chunk, error) {
-	chunks, cerr := r.Splitter.CreateChunks(path, content)
-	if cerr != nil {
-		return chunks, cerr
+func (r *Rag) Indexing(doc Document, splitter Splitter) error {
+	serr := splitter.FillChunks(doc)
+	if serr != nil {
+		return serr
 	}
 
 	var qs []string
 
-	for i, _ := range chunks {
-		qs = append(qs, chunks[i].Query)
+	for i, _ := range doc.Chunks() {
+		qs = append(qs, chunks[i].Query())
 	}
 
 	embeds, err := r.Embeddings(qs)
@@ -96,14 +100,14 @@ func (r *Rag) Indexing(path stribg, content string) ([]Chunk, error) {
 		return chunks, err
 	}
 	if len(embeds) != len(chunks) {
-		return doc, fmt.Errorf("Embedding Error!")
+		return fmt.Errorf("Embedding Error!")
 	}
 
-	for i, _ := range chunks {
-		chunks[i].Embedding = embeds[i]
+	for i, chunk := range doc.Chunks() {
+		chunk.SetEmbedding(embeds[i])
 	}
 
-	err = r.Database.AddChunks(path, chunks)
+	err = r.Database.AddDocument(doc.Path(), doc)
 	return chunks, err
 }
 
