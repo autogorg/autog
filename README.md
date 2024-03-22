@@ -1,10 +1,10 @@
 # AutoG
 
-AutoG is a lightweight, complete, and open agent development framework
+# AutoG is a lightweight, comprehensive, and flexible Agent development framework
 
-- Lightweight: Developed purely in Go language without any third-party dependencies.
-- Complete: Flexible prompt engineering framework, short and long-term memory, planning, acting, and reflecting capabilities.
-- Open: Defaults to interfacing with OpenAI's API, but can easily interface with any other model.
+- Lightweight: Developed in pure Go language, zero third-party dependencies.
+- Comprehensive: Fully-featured, includes a prompt framework, RAG, model interfacing interfaces, supports long-term and short-term memory, planning, action, and reflection capabilities, etc.
+- Flexible: A functional + react framework, capable of implementing multi-Agent interactions and dynamic state graphs and control flows through the capabilities of Future functions.
 
 ### Example
 
@@ -18,8 +18,8 @@ AutoG is a lightweight, complete, and open agent development framework
     Summarize(nil, summary, prefix, true) // force = true
 ```
 
-# AutoG是一个轻量、完整、开放的Agent开发框架
+# AutoG是一个轻量、完整、灵活的Agent开发框架
 
-- 轻量：纯Go语言开发，无任何第三方依赖。
-- 完整：灵活的提示工程框架，支持长短期记忆、计划、行动和反思能力。
-- 开放：默认与 OpenAI 的 API 对接，但可以轻松与任何其他模型对接。
+- 轻量：纯Go语言开发，零第三方依赖。
+- 完整：功能齐全，包含提示工程框架，RAG，模型对接接口，支持长短期记忆、计划、行动和反思能力等。
+- 灵活：函数式+响应式框架，可通过Future函数的能力，实现多Agent交互以及动态的状态图和控制流。
