@@ -35,13 +35,8 @@ type Chunk struct {
 	Embedding []float64 `json:"Embedding"`
 }
 
-type Document struct {
-	Path    string     `json:"Path"`
-	Chunks  []Chunk    `json:"Chunks"`
-}
-
 type Splitter interface {
-	CreateDocument(path string, content string) (*Document, error)
+	CreateChunks(path string, content string) ([]Chunk, error)
 }
 
 type EmbeddingModel interface {
@@ -84,32 +79,32 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 	return embeds, err
 }
 
-func (r *Rag) Indexing(path stribg, content string) (*Document, error) {
-	doc, derr := r.Splitter.CreateDocument(path, content)
-	if derr != nil {
-		return doc, derr
+func (r *Rag) Indexing(path stribg, content string) ([]Chunk, error) {
+	chunks, cerr := r.Splitter.CreateChunks(path, content)
+	if cerr != nil {
+		return chunks, cerr
 	}
 
 	var qs []string
 
-	for i, _ := range doc.Chunks {
-		qs = append(qs, doc.Chunks[i].Query)
+	for i, _ := range chunks {
+		qs = append(qs, chunks[i].Query)
 	}
 
 	embeds, err := r.Embeddings(qs)
 	if err != nil {
-		return doc, err
+		return chunks, err
 	}
-	if len(embeds) != len(doc.Chunks) {
+	if len(embeds) != len(chunks) {
 		return doc, fmt.Errorf("Embedding Error!")
 	}
 
-	for i, _ := range doc.Chunks {
-		doc.Chunks[i].Embedding = embeds[i]
+	for i, _ := range chunks {
+		chunks[i].Embedding = embeds[i]
 	}
 
-	err = r.Database.AddChunks(path, doc.Chunks)
-	return doc, err
+	err = r.Database.AddChunks(path, chunks)
+	return chunks, err
 }
 
 func (r *Rag) Retrieval(queries []string, path string, topk int) ([]ScoredChunks, error) {
