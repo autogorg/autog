@@ -24,6 +24,11 @@ type Database interface {
 	GetDatabaseChunks() ([]Chunk, []Embedding, error)
 }
 
+type Database interface {
+	AddChunks(path string, []Chunk) error
+ SearchChunks(path string, embeds []Embedding) ([]ScoredChunks, error)
+}
+
 type ScoredChunk {
 	Chunk *Chunk
 	Score float64
@@ -43,9 +48,6 @@ type Chunk struct {
 
 type Document struct {
 	Path    string     `json:"Path"`
-	Title   string     `json:"Title"`
-	Desc    string     `json:"Desc"`
-	Content string     `json:"Content"`
 	Chunks  []Chunk    `json:"Chunks"`
 }
 
@@ -62,34 +64,6 @@ type Rag struct {
 	Splitter Splitter
 	EmbeddingModel EmbeddingModel
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func Norm(embed Embedding) float64 {
-	n := 0.0
-	for _, f := range embed {
-		n += f * f
-	}
-	return math.Sqrt(n)
-}
-
-func Norms(embeds []Embedding) []Embedding{
-	norms := make([]Embedding, len(embeds))
-	for i, embed := range embeds {
-		norms[i] = Norm(embed)
-	}
-	return norms
-}
-
-
-func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qi, di int, k int, channel chan<- []ScoredChunks) {
-
 }
 
 
