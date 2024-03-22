@@ -130,3 +130,10 @@ func (md *MemoryDatabase) GetDatabaseChunks() ([]Chunk, []Embedding, error) {
 	return chunks, embeddings, nil
 }
 
+func (md *MemoryDatabase) AddChunks(path string, []Chunk) error {
+}
+
+func (md *MemoryDatabase) SearchChunks(path string, embeds []Embedding) {
+}
+
+
