@@ -6,24 +6,87 @@ import (
 
 type MemChunk struct {
 	Index     int       `json:"Index"`
-	Path      string    `json:"DocPath"`
+	Path      string    `json:"Path"`
 	Query     string    `json:"Query"`
 	Content   string    `json:"Content"`
+	LineStart int       `json:"LineStart"`
+	LineEnd   int       `json:"LineEnd"`
 	ByteStart int       `json:"ByteStart"`
 	ByteEnd   int       `json:"ByteEnd"`
+	MetaData  string    `json:"MetaData"`
 	Embedding []float64 `json:"Embedding"`
 }
 
-func (chunk *MemChunk) Index() int {
+func (chunk *MemChunk) GetIndex() int {
 	return chunk.Index
 }
 
-func (chunk *MemChunk) Path() string {
+func (chunk *MemChunk) SetIndex(index int) {
+	chunk.Index = index
+}
+
+func (chunk *MemChunk) GetPath() string {
 	return chunk.Path
 }
 
-func (chunk *MemChunk) Query() string {
+func (chunk *MemChunk) SetPath(path string) {
+	chunk.Path = path
+}
+
+func (chunk *MemChunk) GetQuery() string {
 	return chunk.Query
+}
+
+func (chunk *MemChunk) SetQuery(query string) {
+	chunk.Query = query
+}
+
+func (chunk *MemChunk) GetContent() string {
+	return chunk.Content
+}
+
+func (chunk *MemChunk) SetContent(content string) {
+	chunk.Content = content
+}
+
+func (chunk *MemChunk) GetLineStart() int {
+	return chunk.LineStart
+}
+
+func (chunk *MemChunk) SetLineStart(i int) {
+	chunk.LineStart = i
+}
+
+func (chunk *MemChunk) GetLineEnd() int {
+	return chunk.LineEnd
+}
+
+func (chunk *MemChunk) SetLineEnd(i int) {
+	chunk.LineEnd = i
+}
+
+func (chunk *MemChunk) GetByteStart() int {
+	return chunk.ByteStart
+}
+
+func (chunk *MemChunk) SetByteStart(i int) {
+	chunk.ByteStart = i
+}
+
+func (chunk *MemChunk) GetByteEnd() int {
+	return chunk.ByteEnd
+}
+
+func (chunk *MemChunk) SetByteEnd(i int) {
+	chunk.ByteEnd = i
+}
+
+func (chunk *MemChunk) GetMetaData() string {
+	return chunk.MetaData
+}
+
+func (chunk *MemChunk) SetMetaData(data string) {
+	chunk.MetaData = data
 }
 
 func (chunk *MemChunk) GetEmbedding() Embedding {
@@ -35,18 +98,43 @@ func (chunk *MemChunk) SetEmbedding(embed Embedding) {
 }
 
 type MemDocument struct {
-	Path    string      `json:"Path"`
-	Title   string      `json:"Title"`
-	Content string      `json:"Content"`
-	Chunks  []*DocChunk `json:"Chunks"`
+	Path     string      `json:"Path"`
+	Title    string      `json:"Title"`
+	Content  string      `json:"Content"`
+	MetaData string      `json:"MetaData"`
+	Chunks   []*DocChunk `json:"Chunks"`
 }
 
-func (doc *MemDocument) Path() string {
+func (doc *MemDocument) GetPath() string {
 	return doc.Path
 }
 
-func (doc *MemDocument) Content() string {
+func (doc *MemDocument) SetPath(path string) {
+	doc.Path = path
+}
+
+func (doc *MemDocument) GetTitle() string {
+	return doc.Title
+}
+
+func (doc *MemDocument) SetTitle(title string) {
+	doc.Title = title
+}
+
+func (doc *MemDocument) GetContent() string {
 	return doc.Content
+}
+
+func (doc *MemDocument) SetContent(content string) {
+	doc.Content = content
+}
+
+func (doc *MemDocument) GetMetaData() string {
+	return doc.MetaData
+}
+
+func (doc *MemDocument) SetMetaData(data string) {
+	doc.MetaData = data
 }
 
 func (doc *MemDocument) GetChunks() []autog.Chunk {

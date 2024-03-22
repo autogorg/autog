@@ -26,16 +26,37 @@ type ScoredChunk {
 type ScoredChunks []ScoredChunk
 
 type Chunk interface {
-	Index() int
-	Path() string
-	Query() string
+	GetIndex() int
+	SetIndex(index int)
+	GetPath() string
+	SetPath(path string)
+	GetQuery() string
+	SetQuery(query string)
+	GetLineStart() int
+	SetLineStart(i int)
+	GetLineEnd() int
+	SetLineEnd(i int)
+	GetByteStart() int
+	SetByteStart(i int)
+	GetByteEnd() int
+	SetByteEnd(i int)
+	GetContent() string
+	SetContent(content string)
+	GetMetaData() string
+	SetMetaData(data string)
 	GetEmbedding() Embedding
 	SetEmbedding(embed Embedding)
 }
 
 type Document interface {
-	Path() string
-	Content() string
+	GetPath() string
+	SetPath(path string)
+	GetTitle() string
+	SetTitle(title string)
+	GetContent() string
+	SetContent(content string)
+	GetMetaData() string
+	SetMetaData(data string)
 	GetChunks() []Chunk
 	SetChunks(chunks []Chunk)
 }
@@ -91,7 +112,7 @@ func (r *Rag) Indexing(doc Document, splitter Splitter) error {
 
 	var qs []string
 
-	for i, _ := range doc.Chunks() {
+	for i, _ := range doc.GetChunks() {
 		qs = append(qs, chunks[i].Query())
 	}
 
@@ -103,11 +124,11 @@ func (r *Rag) Indexing(doc Document, splitter Splitter) error {
 		return fmt.Errorf("Embedding Error!")
 	}
 
-	for i, chunk := range doc.Chunks() {
+	for i, chunk := range doc.GetChunks() {
 		chunk.SetEmbedding(embeds[i])
 	}
 
-	err = r.Database.AddDocument(doc.Path(), doc)
+	err = r.Database.AddDocument(doc.GetPath(), doc)
 	return chunks, err
 }
 
