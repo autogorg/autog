@@ -28,6 +28,35 @@ func generateRamdomPath() string {
 	return fmt.Sprintf("md5-%x", md5.Sum([]byte(timeString)))
 }
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func Norm(embed Embedding) float64 {
+	n := 0.0
+	for _, f := range embed {
+		n += f * f
+	}
+	return math.Sqrt(n)
+}
+
+func Norms(embeds []Embedding) []Embedding{
+	norms := make([]Embedding, len(embeds))
+	for i, embed := range embeds {
+		norms[i] = Norm(embed)
+	}
+	return norms
+}
+
+
+func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qi, di int, k int, channel chan<- []ScoredChunks) {
+
+}
+
+
 func (md *MemoryDatabase) AddDocument(doc Document) (path string, error) {
 	if len(doc.Path) <= 0 {
 		doc.Path = generateRamdomPath()
