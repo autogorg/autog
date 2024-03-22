@@ -2,7 +2,7 @@ package autog
 
 import (
 	"math"
-    "time"
+ "time"
 	"sync"
 	"context"
 )
@@ -15,7 +15,7 @@ type Embedding []float64
 
 type Database interface {
 	AddChunks(path string, []Chunk) error
-	SearchChunks(path string, embeds []Embedding) ([]ScoredChunks, error)
+	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
 
 type ScoredChunk {
@@ -27,7 +27,7 @@ type ScoredChunks []ScoredChunk
 
 type Chunk struct {
 	Index     int       `json:"Index"`
-	DocPath   string    `json:"DocPath"`
+	Path      string    `json:"DocPath"`
 	Query     string    `json:"Query"`
 	Content   string    `json:"Content"`
 	ByteStart int       `json:"ByteStart"`
@@ -41,7 +41,7 @@ type Document struct {
 }
 
 type Splitter interface {
-	CreateDocument(path string, title string, desc string, content string) (*Document, error)
+	CreateDocument(path string, content string) (*Document, error)
 }
 
 type EmbeddingModel interface {
@@ -84,8 +84,8 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 	return embeds, err
 }
 
-func (r *Rag) Indexing(path stribg, title string, desc string, content string) (*Document, error) {
-	doc, derr := r.Splitter.CreateDocument(path, title, desc, content)
+func (r *Rag) Indexing(path stribg, content string) (*Document, error) {
+	doc, derr := r.Splitter.CreateDocument(path, content)
 	if derr != nil {
 		return doc, derr
 	}
@@ -108,17 +108,17 @@ func (r *Rag) Indexing(path stribg, title string, desc string, content string) (
 		doc.Chunks[i].Embedding = embeds[i]
 	}
 
+	err = r.Database.AddChunks(path, doc.Chunks)
 	return doc, err
 }
 
-func (r *Rag) Retrieval(queries []string, docPath string, topk int) ([]ScoredChunks, error) {
+func (r *Rag) Retrieval(queries []string, path string, topk int) ([]ScoredChunks, error) {
 	var scoreds []ScoredChunks
 	qembeds, berr := r.Embeddings(queries)
 	if berr != nil {
 		return scoreds, berr
 	}
-//todo
-	return scoreds, nil
+	return r.Database.SearchChunks(path, qemneds, topk)
 }
 
 func (r *Rag) doPostRank(queries []string, chunks []ScoredChunk) ([]ScoredChunks, error) {
