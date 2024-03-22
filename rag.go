@@ -13,20 +13,9 @@ const (
 
 type Embedding []float64
 
-
-type Database interface {
-	AddDocument(doc Document) (path string, error)
-	GetDocument(path string) (Document, error)
-	DelDocument(path string) error
-	GetDocumentPaths() ([]string, error)
-	GetDocumentChunk(path string, idx int) (Chunk, error)
-	GetDocumentChunks(path string) ([]Chunk, []Embedding, error)
-	GetDatabaseChunks() ([]Chunk, []Embedding, error)
-}
-
 type Database interface {
 	AddChunks(path string, []Chunk) error
- SearchChunks(path string, embeds []Embedding) ([]ScoredChunks, error)
+	SearchChunks(path string, embeds []Embedding) ([]ScoredChunks, error)
 }
 
 type ScoredChunk {
