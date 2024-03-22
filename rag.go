@@ -1,7 +1,10 @@
 package autog
 
 import (
+	"math"
     "time"
+	"sync"
+	"context"
 )
 
 const (
@@ -26,6 +29,8 @@ type ScoredChunk {
 	Score float64
 }
 
+type ScoredChunks []ScoredChunk
+
 type Chunk struct {
 	Index     int       `json:"Index"`
 	DocPath   string    `json:"DocPath"`
@@ -45,32 +50,167 @@ type Document struct {
 }
 
 type Splitter interface {
-	CreateDocument(path string, title string, desc string, content string) *Document
+	CreateDocument(path string, title string, desc string, content string) (*Document, error)
 }
 
 type EmbeddingModel interface {
-	Embedding(text string) Embedding
+	Embedding(text string) (Embedding, error)
 }
 
 type Rag struct {
 	Database Database
 	Splitter Splitter
 	EmbeddingModel EmbeddingModel
-	PostRank func (r *Rag, chunks []ScoredChunk) []ScoredChunk
+	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
 
-func (r *Rag) Indexing(path stribg, title string, desc string, content string) *Document {
-	return nil
-}
-
-func (r *Rag) Retrieval(queries []string, docPath string, topK int) []ScoredChunk {
-	var chunks []Chunk
-	return chunks
-}
-
-func (r *Rag) doPostRank(chunks []ScoredChunk) []ScoredChunk {
-	if r.PostRank == nil {
-		return chunks
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	return r.PostRank(r, chunks)
+	return b
+}
+
+func Norm(embed Embedding) float64 {
+	n := 0.0
+	for _, f := range embed {
+		n += f * f
+	}
+	return math.Sqrt(n)
+}
+
+func Norms(embeds []Embedding) []Embedding{
+	norms := make([]Embedding, len(embeds))
+	for i, embed := range embeds {
+		norms[i] = Norm(embed)
+	}
+	return norms
+}
+
+
+func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qi, di int, k int, channel chan<- []ScoredChunks) {
+
+}
+
+
+func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
+	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	var err error
+
+	embeds := make([]Embedding, len(texts))
+	for i, text := range texts {
+		wg.Add(1)
+		go func (i int, text string) {
+			defer wg.Done()
+			embed, eerr := r.EmbeddingModel.Embedding(text)
+			if eerr != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+				err = eerr
+				return
+			}
+			mutex.Lock()
+			defer mutex.Unlock()
+			embeds[i] = embed
+		}(i, text)
+	}
+
+	wg.Wait()
+
+	return embeds, err
+}
+
+func (r *Rag) Indexing(path stribg, title string, desc string, content string) (*Document, error) {
+	doc, derr := r.Splitter.CreateDocument(path, title, desc, content)
+	if derr != nil {
+		return doc, derr
+	}
+
+	var qs []string
+
+	for i, _ := range doc.Chunks {
+		qs = append(qs, doc.Chunks[i].Query)
+	}
+
+	embeds, err := r.Embeddings(qs)
+	if err != nil {
+		return doc, err
+	}
+	if len(embeds) != len(doc.Chunks) {
+		return doc, fmt.Errorf("Embedding Error!")
+	}
+
+	for i, _ := range doc.Chunks {
+		doc.Chunks[i].Embedding = embeds[i]
+	}
+
+	return doc, err
+}
+
+func (r *Rag) Retrieval(queries []string, docPath string, topk int) ([]ScoredChunks, error) {
+	var scoreds []ScoredChunks
+	qembeds, berr := r.Embeddings(queries)
+	if berr != nil {
+		return scoreds, berr
+	}
+	qnorms := Norms(qembeds)
+
+	var dbchunks []Chunk
+	var dbembeds []Embedding
+	var dberr error
+	if docPath == DOCUMENT_PATH_NONE {
+		dbchunks, dbembeds, dberr = r.Database.GetDatabaseChunks()
+	} else {
+		dbchunks, dbembeds, dberr = r.Database.GetDocumentChunks(docPath)
+	}
+	if dberr != nil {
+		return scoreds, dberr
+	}
+	dbnorms := Norms(dbembeds)
+
+	qnum  := len(queries)
+	channel := make(chan []ScoredChunks)
+	scoreds = make([]ScoredChunks, qnum)
+
+	var wg sync.WaitGroup
+	const qbatch = 100
+	const dbatch = 1000
+	for qi := 0; qi < len(qembeds); qi += qbatch {
+		for dbi := 0; dbi < len(dbembeds); dbi += dbatch {
+			qj := min(qi + qbatch, len(qembeds))
+			dj := min(di + dbatch, len(dembeds))
+
+			wg.Add(1)
+			go func(qi int, di int, qj int, dj int) {
+				wg.Done()
+				CosSim(qembeds[qi:qj], dbembeds[di:dj], &qnorms, &dbnorms, qi, di, topk, channel)
+			}(qi, di, qj, dj)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(channel)
+	}()
+
+	cnt := 0
+	for cscores := range channel {
+		for ci := range cscores {
+			idx := ci + cnt * qbatch
+			if idx < len(scoreds) {
+				scoreds[idx] = cscores[qi]
+			}
+		}
+		cnt++
+	}
+
+	return scoreds, nil
+}
+
+func (r *Rag) doPostRank(queries []string, chunks []ScoredChunk) ([]ScoredChunks, error) {
+	if r.PostRank == nil {
+		return chunks, nil
+	}
+	return r.PostRank(r, queries, chunks)
 }
