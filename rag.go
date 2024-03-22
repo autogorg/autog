@@ -105,6 +105,9 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 }
 
 func (r *Rag) Indexing(doc Document, splitter Splitter) error {
+	if doc.GetPath() == DOCUMENT_PATH_NONE {
+		return fmt.Errorf("Document path is empty!")
+	}
 	serr := splitter.FillChunks(doc)
 	if serr != nil {
 		return serr
