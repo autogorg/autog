@@ -1,10 +1,10 @@
 package autog
 
 import (
-	"math"
- "time"
-	"sync"
-	"context"
+  "math"
+  "time"
+  "sync"
+  "context"
 )
 
 const (
