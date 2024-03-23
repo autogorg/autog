@@ -112,7 +112,7 @@ func (md *MemoryDatabase) GetDatabaseChunks() ([]autog.Chunk, []autog.Embedding,
 	return chunks, embeddings, nil
 }
 
-func (md *MemoryDatabase) AddDocument(path string, doc autog.Document) error {
+func (md *MemoryDatabase) SaveDocument(path string, payload interface{}, document autog.Document) error {
     memDoc, ok := doc.(*autog.Document)
 	md.PathToDocument[path] = memDoc
     return nil
