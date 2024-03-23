@@ -14,7 +14,7 @@ const (
 type Embedding []float64
 
 type Database interface {
-	SaveDocument(path string, payload interface{}, document Document) error
+	SaveChunks(path string, payload interface{}, chunks []Chunk]) error
 	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
 
@@ -48,16 +48,7 @@ type Chunk interface {
 	SetEmbedding(embed Embedding)
 }
 
-type Document interface {
-	GetPath() string
-	SetPath(path string)
-	GetPayload() interface{}
-	SetPayload(payload interface{})
-	GetChunks() []Chunk
-	SetChunks(chunks []Chunk)
-}
-
-type ParserFunction func (path string, payload interface{}) (Document, error)
+type ParserFunction func (path string, payload interface{}) ([]Chunk, error)
 
 type Splitter interface {
 	GetParser() ParserFunction
@@ -107,30 +98,30 @@ func (r *Rag) Indexing(path string, payload interface{}, splitter Splitter) erro
 		return fmt.Errorf("Document path is empty!")
 	}
 	parser := splitter.GetParser()
-	doc, derr := parser(path, payload)
-	if derr != nil {
-		return derr
+	chunks, cerr := parser(path, payload)
+	if cerr != nil {
+		return cerr
 	}
 
 	var qs []string
 
-	for i, chunk := range doc.GetChunks() {
-		qs = append(qs, chunk.Query())
+	for _, chunk := range chunks {
+		qs = append(qs, chunk.GetQuery())
 	}
 
 	embeds, eerr := r.Embeddings(qs)
 	if eerr != nil {
 		return eerr
 	}
-	if len(embeds) != len(doc.GetChunks()) {
+	if len(embeds) != len(chunks) {
 		return fmt.Errorf("Embedding Error!")
 	}
 
-	for i, chunk := range doc.GetChunks() {
+	for i, chunk := range chunks {
 		chunk.SetEmbedding(embeds[i])
 	}
 
-	serr = r.Database.SaveDocument(path, payload, doc)
+	serr = r.Database.SaveChunks(path, payload, chunks)
 	return serr
 }
 

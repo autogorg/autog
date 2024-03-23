@@ -112,8 +112,11 @@ func (md *MemoryDatabase) GetDatabaseChunks() ([]autog.Chunk, []autog.Embedding,
 	return chunks, embeddings, nil
 }
 
-func (md *MemoryDatabase) SaveDocument(path string, payload interface{}, document autog.Document) error {
-    memDoc, ok := doc.(*autog.Document)
+func (md *MemoryDatabase) SaveChunks(path string, payload interface{}, chunks []autog.Chunks) error {
+    memDoc := &MemDocument{}
+	memDoc.SetPath(pat)
+	memDoc.SetPayload(payload)
+	memDoc.SetChunks(chunks)
 	md.PathToDocument[path] = memDoc
     return nil
 }
