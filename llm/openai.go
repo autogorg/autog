@@ -19,6 +19,7 @@ const (
 	defaultVendor         = "openai"
 	defaultModel          = "gpt-4-turbo-preview"
 	defaultModelWeak      = "gpt-4-turbo-preview"
+	defaultModelEmbed     = ""
 )
 
 var (
@@ -125,6 +126,7 @@ type OpenAi struct {
 	ApiOrg      string
 	Model       string
 	ModelWeak   string
+	ModelEmbed  string
 	Temperature     int
 	TemperatureWeak int
 	TimeOut       int
@@ -153,6 +155,9 @@ func (gpt *OpenAi) InitLLM() error {
 	}
 	if len(gpt.ModelWeak) <= 0 {
 		gpt.ModelWeak = defaultModelWeak
+	}
+	if len(gpt.ModelEmbed) <= 0 {
+		gpt.ModelEmbed = defaultModelEmbed
 	}
 	if gpt.Temperature <= 0 {
 		// TODO: Changed by model
@@ -485,4 +490,10 @@ func (gpt *OpenAi) SendMessagesByWeakModel(cxt context.Context, msgs []autog.Cha
 
 func (gpt *OpenAi) SendMessagesStreamByWeakModel(cxt context.Context, msgs []autog.ChatMessage, reader autog.StreamReader) (autog.LLMStatus, autog.ChatMessage) {
 	return gpt.SendMessagesStreamInner(cxt, msgs, reader, true)
+}
+
+func (gpt *OpenAi) Embedding(cxt context.Context, text string) (Embedding, error) {
+	var embed Embedding
+	// TODO:
+	return embed, nil
 }

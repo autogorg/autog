@@ -9,8 +9,6 @@ type MemChunk struct {
 	Path      string    `json:"Path"`
 	Query     string    `json:"Query"`
 	Content   string    `json:"Content"`
-	LineStart int       `json:"LineStart"`
-	LineEnd   int       `json:"LineEnd"`
 	ByteStart int       `json:"ByteStart"`
 	ByteEnd   int       `json:"ByteEnd"`
 	Payload   string    `json:"Payload"`
@@ -47,22 +45,6 @@ func (chunk *MemChunk) GetContent() string {
 
 func (chunk *MemChunk) SetContent(content string) {
 	chunk.Content = content
-}
-
-func (chunk *MemChunk) GetLineStart() int {
-	return chunk.LineStart
-}
-
-func (chunk *MemChunk) SetLineStart(i int) {
-	chunk.LineStart = i
-}
-
-func (chunk *MemChunk) GetLineEnd() int {
-	return chunk.LineEnd
-}
-
-func (chunk *MemChunk) SetLineEnd(i int) {
-	chunk.LineEnd = i
 }
 
 func (chunk *MemChunk) GetByteStart() int {

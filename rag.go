@@ -55,7 +55,7 @@ type Splitter interface {
 }
 
 type EmbeddingModel interface {
-	Embedding(text string) (Embedding, error)
+	Embedding(cxt context.Context, text string) (Embedding, error)
 }
 
 type Rag struct {
@@ -64,8 +64,7 @@ type Rag struct {
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
 
-
-func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
+func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, error) {
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
 	var err error
@@ -75,7 +74,7 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 		wg.Add(1)
 		go func (i int, text string) {
 			defer wg.Done()
-			embed, eerr := r.EmbeddingModel.Embedding(text)
+			embed, eerr := r.EmbeddingModel.Embedding(cxt, text)
 			if eerr != nil {
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -93,7 +92,7 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 	return embeds, err
 }
 
-func (r *Rag) Indexing(path string, payload interface{}, splitter Splitter) error {
+func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter) error {
 	if doc.GetPath() == DOCUMENT_PATH_NONE {
 		return fmt.Errorf("Document path is empty!")
 	}
@@ -109,7 +108,7 @@ func (r *Rag) Indexing(path string, payload interface{}, splitter Splitter) erro
 		qs = append(qs, chunk.GetQuery())
 	}
 
-	embeds, eerr := r.Embeddings(qs)
+	embeds, eerr := r.Embeddings(cxt, qs)
 	if eerr != nil {
 		return eerr
 	}
@@ -125,9 +124,9 @@ func (r *Rag) Indexing(path string, payload interface{}, splitter Splitter) erro
 	return serr
 }
 
-func (r *Rag) Retrieval(queries []string, path string, topk int) ([]ScoredChunks, error) {
+func (r *Rag) Retrieval(cxt context.Context, queries []string, path string, topk int) ([]ScoredChunks, error) {
 	var scoreds []ScoredChunks
-	qembeds, berr := r.Embeddings(queries)
+	qembeds, berr := r.Embeddings(cxt, queries)
 	if berr != nil {
 		return scoreds, berr
 	}
