@@ -13,7 +13,7 @@ type MemChunk struct {
 	LineEnd   int       `json:"LineEnd"`
 	ByteStart int       `json:"ByteStart"`
 	ByteEnd   int       `json:"ByteEnd"`
-	MetaData  string    `json:"MetaData"`
+	Payload   string    `json:"Payload"`
 	Embedding []float64 `json:"Embedding"`
 }
 
@@ -81,12 +81,15 @@ func (chunk *MemChunk) SetByteEnd(i int) {
 	chunk.ByteEnd = i
 }
 
-func (chunk *MemChunk) GetMetaData() string {
-	return chunk.MetaData
+func (chunk *MemChunk) GetPayload() interface{} {
+	return chunk.Payload
 }
 
-func (chunk *MemChunk) SetMetaData(data string) {
-	chunk.MetaData = data
+func (chunk *MemChunk) SetPayload(payload interface{}) {
+	str, ok := payload.(string)
+	if ok {
+		chunk.Payload = str
+	}
 }
 
 func (chunk *MemChunk) GetEmbedding() Embedding {
@@ -99,9 +102,7 @@ func (chunk *MemChunk) SetEmbedding(embed Embedding) {
 
 type MemDocument struct {
 	Path     string      `json:"Path"`
-	Title    string      `json:"Title"`
-	Content  string      `json:"Content"`
-	MetaData string      `json:"MetaData"`
+	Payload  string      `json:"Payload"`
 	Chunks   []*DocChunk `json:"Chunks"`
 }
 
@@ -113,28 +114,15 @@ func (doc *MemDocument) SetPath(path string) {
 	doc.Path = path
 }
 
-func (doc *MemDocument) GetTitle() string {
-	return doc.Title
+func (doc *MemDocument) GetPayload() interface{} {
+	return doc.Payload
 }
 
-func (doc *MemDocument) SetTitle(title string) {
-	doc.Title = title
-}
-
-func (doc *MemDocument) GetContent() string {
-	return doc.Content
-}
-
-func (doc *MemDocument) SetContent(content string) {
-	doc.Content = content
-}
-
-func (doc *MemDocument) GetMetaData() string {
-	return doc.MetaData
-}
-
-func (doc *MemDocument) SetMetaData(data string) {
-	doc.MetaData = data
+func (doc *MemDocument) SetPayload(payload interface{}) {
+	str, ok := payload.(string)
+	if ok {
+		doc.Payload = str
+	}
 }
 
 func (doc *MemDocument) GetChunks() []autog.Chunk {

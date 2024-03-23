@@ -14,7 +14,7 @@ const (
 type Embedding []float64
 
 type Database interface {
-	AddDocument(path string, doc Document) error
+	SaveDocument(path string, payload interface{}, document Document) error
 	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
 
@@ -42,8 +42,8 @@ type Chunk interface {
 	SetByteEnd(i int)
 	GetContent() string
 	SetContent(content string)
-	GetMetaData() string
-	SetMetaData(data string)
+	GetPayload() interface{}
+	SetPayload(payload interface{})
 	GetEmbedding() Embedding
 	SetEmbedding(embed Embedding)
 }
@@ -51,18 +51,16 @@ type Chunk interface {
 type Document interface {
 	GetPath() string
 	SetPath(path string)
-	GetTitle() string
-	SetTitle(title string)
-	GetContent() string
-	SetContent(content string)
-	GetMetaData() string
-	SetMetaData(data string)
+	GetPayload() interface{}
+	SetPayload(payload interface{})
 	GetChunks() []Chunk
 	SetChunks(chunks []Chunk)
 }
 
+type ParserFunction func (path string, payload interface{}) (Document, error)
+
 type Splitter interface {
-	FillChunks(doc Document) (error)
+	GetParser() ParserFunction
 }
 
 type EmbeddingModel interface {
@@ -104,26 +102,27 @@ func (r *Rag) Embeddings(texts []string) ([]Embedding, error) {
 	return embeds, err
 }
 
-func (r *Rag) Indexing(doc Document, splitter Splitter) error {
+func (r *Rag) Indexing(path string, payload interface{}, splitter Splitter) error {
 	if doc.GetPath() == DOCUMENT_PATH_NONE {
 		return fmt.Errorf("Document path is empty!")
 	}
-	serr := splitter.FillChunks(doc)
-	if serr != nil {
-		return serr
+	parser := splitter.GetParser()
+	doc, derr := parser(path, payload)
+	if derr != nil {
+		return derr
 	}
 
 	var qs []string
 
-	for i, _ := range doc.GetChunks() {
-		qs = append(qs, chunks[i].Query())
+	for i, chunk := range doc.GetChunks() {
+		qs = append(qs, chunk.Query())
 	}
 
-	embeds, err := r.Embeddings(qs)
-	if err != nil {
-		return chunks, err
+	embeds, eerr := r.Embeddings(qs)
+	if eerr != nil {
+		return eerr
 	}
-	if len(embeds) != len(chunks) {
+	if len(embeds) != len(doc.GetChunks()) {
 		return fmt.Errorf("Embedding Error!")
 	}
 
@@ -131,8 +130,8 @@ func (r *Rag) Indexing(doc Document, splitter Splitter) error {
 		chunk.SetEmbedding(embeds[i])
 	}
 
-	err = r.Database.AddDocument(doc.GetPath(), doc)
-	return chunks, err
+	serr = r.Database.SaveDocument(path, payload, doc)
+	return serr
 }
 
 func (r *Rag) Retrieval(queries []string, path string, topk int) ([]ScoredChunks, error) {
