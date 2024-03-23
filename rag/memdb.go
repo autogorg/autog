@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"bytes"
+	"container/heap"
 	"encoding/json"
 	"encoding/gob"
 	"crypto/md5"
@@ -16,6 +17,33 @@ const (
 	ErrDocNotExists    = "Document not exists!"
 	ErrChunkNotExists  = "Chunk not exists!"
 )
+
+type ScoredChunkIndex {
+	Index int
+	Score float64
+}
+
+type ScoredChunkIndexs []ScoredChunkIndex
+
+func (s ScoredChunkIndexs) Len() int           { return len(s) }
+func (s ScoredChunkIndexs) Less(i, j int) bool { return s[i].Score < s[j].Score }
+func (s ScoredChunkIndexs) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func (s *ScoredChunkIndexs) Push(c interface{}) {
+	*s = append(*s, c.(ScoredChunkIndex))
+}
+
+func (s *ScoredChunkIndexs) Pop() ScoredChunkIndex {
+	org := *s
+	n := len(org)
+	last := org[n-1]
+	*s = org[0 : n-1]
+	return last
+}
+
+func (s *ScoredChunkIndexs) Peek() interface{} {
+	return s[0]
+}
 
 type MemoryDatabase struct {
 	PathToDocument map[string]*MemDocument
@@ -44,9 +72,49 @@ func Norms(embeds []Embedding) []Embedding{
 	return norms
 }
 
+func DotProduct(a, b []float64) float64 {
+	result := 0.0
+	for i := range a {
+		result += a[i] * b[i]
+	}
+	return result
+}
 
-func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qi, di int, k int, channel chan<- []ScoredChunks) {
+func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qsi, dsi int, topk int, dbchunks *[]autog.Chunk, channel chan<- []autog.ScoredChunks) {
+	qn := len(qembeds)
+	dn := len(dbembeds)
+	scoredChunks := make([]autog.ScoredChunks, qn)
 
+	for qi := 0; qi < qn; qi++ {
+		scores := make([]float64, dn)
+		for di := 0; di < dn; di++ {
+			scores[di] = DotProduct(qembeds[qi], dbembeds[di]) / ((*qnorms)[qi] * (*dbnorms)[di])
+		}
+
+		chunkIndexHeap := &autog.ScoredChunkIndexs{}
+		heap.Init(chunkIndexHeap)
+
+		for i, score := range scores {
+			if pq.Len() < k {
+				heap.Push(chunkIndexHeap, ScoredChunkIndex{Index: i, Score: float64(score)})
+			} else if score > pq.Peek().Score {
+				heap.Pop(chunkIndexHeap)
+				heap.Push(chunkIndexHeap, ScoredChunkIndexs{Index: i, Score: float64(score)})
+			}
+		}
+
+		for chunkIndexHeap.Len() > 0 {
+			sci := heap.Pop(chunkIndexHeap).(ScoredChunkIndex)
+			sci.Index += dsi
+			schunk := &autog.ScoredChunk{
+				Chunk : (*dbchunks)[sci.Index],
+				Score : sci.Score
+			}
+			scoredChunks[qi] = append(scoredChunks[qi], schunk)
+		}
+	}
+
+	channel <- scoredChunks
 }
 
 func (md *MemoryDatabase) GetDocument(path string) (*MemDocument, error) {
@@ -152,7 +220,7 @@ func (md *MemoryDatabase) SearchChunks(path string, embeds []autog.Embedding) ([
 			wg.Add(1)
 			go func(qi int, di int, qj int, dj int) {
 				wg.Done()
-				CosSim(embeds[qi:qj], dbembeds[di:dj], &norms, &dbnorms, qi, di, topk, channel)
+				CosSim(embeds[qi:qj], dbembeds[di:dj], &norms, &dbnorms, qi, di, topk, &dbchunks, channel)
 			}(qi, di, qj, dj)
 		}
 	}

@@ -23,7 +23,7 @@ type ScoredChunk {
 	Score float64
 }
 
-type ScoredChunks []ScoredChunk
+type ScoredChunks []*ScoredChunk
 
 type Chunk interface {
 	GetIndex() int
