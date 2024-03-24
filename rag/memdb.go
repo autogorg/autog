@@ -45,8 +45,14 @@ func (s *ScoredChunkIndexs) Peek() interface{} {
 	return s[0]
 }
 
+type MemDocuments []*MemDocument
+
+func (m *MemDocuments) Append(doc *MemDocument) {
+	*m = append(*m, doc)
+}
+
 type MemoryDatabase struct {
-	PathToDocument map[string]*MemDocument
+	PathToDocuments map[string]*MemDocuments
 }
 
 func min(a, b int) int {
@@ -117,23 +123,23 @@ func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qsi, dsi 
 	channel <- scoredChunks
 }
 
-func (md *MemoryDatabase) GetDocument(path string) (*MemDocument, error) {
-	doc, ok := md.PathToDocument[path];
+func (md *MemoryDatabase) GetDocuments(path string) ([]*MemDocument, error) {
+	docs, ok := md.PathToDocuments[path];
 	if !ok {
-		return doc, return fmt.Errorf(ErrDocNotExists)
+		return docs, return fmt.Errorf(ErrDocNotExists)
 	}
-	return doc, nil
+	return docs, nil
 }
 
-func (md *MemoryDatabase) DelDocument(path string) error {
-	if _, ok := md.PathToDocument[path]; !ok {
+func (md *MemoryDatabase) DelDocuments(path string) error {
+	if _, ok := md.PathToDocuments[path]; !ok {
 		return fmt.Errorf(ErrDocNotExists)
 	}
 	delete(md, path)
 	return nil
 }
 
-func (md *MemoryDatabase) GetDocumentPaths() ([]string, error) {
+func (md *MemoryDatabase) GetPaths() ([]string, error) {
 	var paths []string
 	for path := range md {
 		paths = append(paths, path)
@@ -141,43 +147,48 @@ func (md *MemoryDatabase) GetDocumentPaths() ([]string, error) {
 	return paths
 }
 
-func (md *MemoryDatabase) GetDocumentChunk(path string, idx int) (*MemChunk, error) {
-	var chunk *MemChunk
-	doc, ok := md.PathToDocument[path];
-	if !ok {
-		return chunk, fmt.Errorf(ErrDocNotExists)
-	}
-	if len(doc.Chunks) <= idx {
-		return chunk, fmt.Errorf(ErrChunkNotExists)
-	}
-	return doc.Chunks[idx], nil
-}
-
-func (md *MemoryDatabase) GetDocumentChunks(path string) ([]autog.Chunk, []autog.Embedding, error) {
+func (md *MemoryDatabase) GetPathChunks(path string) ([]autog.Chunk, []autog.Embedding, error) {
 	var chunks []autog.Chunk
 	var embeddings []autog.Embedding
-	doc, ok := md.PathToDocument[path];
+	docs, ok := md.PathToDocuments[path];
 	if !ok {
 		return chunks, embeddings, fmt.Errorf(ErrDocNotExists)
 	}
-	for _, chunk := range doc.Chunks {
-		embeddings = append(embeddings, chunk.Embedding)
-		chunks = append(chunks, chunk)
+	for _, doc := range docs {
+		for _, chunk := range doc.Chunks {
+			embeddings = append(embeddings, chunk.Embedding)
+			chunks = append(chunks, chunk)
+		}
 	}
 	return chunks, embeddings, nil
 }
 
-func (md *MemoryDatabase) GetDatabaseChunks() ([]autog.Chunk, []autog.Embedding, error) {
+func (md *MemoryDatabase) GetChunks() ([]autog.Chunk, []autog.Embedding, error) {
 	var chunks []autog.Chunk
 	var embeddings []autog.Embedding
-	for path, doc := range md {
-		for _, chunk := range doc.Chunks {
-			chunks = append(chunks, chunk)
-			embeddings = append(embeddings, chunk.Embedding)
+	for path, docs := range md {
+		for _, doc := range docs {
+			for _, chunk := range doc.Chunks {
+				chunks = append(chunks, chunk)
+				embeddings = append(embeddings, chunk.Embedding)
+			}
 		}
 	}
 
 	return chunks, embeddings, nil
+}
+
+func (md *MemoryDatabase) AppendChunks(path string, payload interface{}, chunks []Chunk]) error {
+	if _, ok := md.PathToDocuments[path]; !ok {
+		return md.SaveChunks(path, payload, chunks)
+	}
+    memDoc := &MemDocument{}
+	memDoc.SetPath(pat)
+	memDoc.SetPayload(payload)
+	memDoc.SetChunks(chunks)
+	p2docs := md.PathToDocuments[path]
+	p2docs.Append(memDoc)
+    return nil
 }
 
 func (md *MemoryDatabase) SaveChunks(path string, payload interface{}, chunks []autog.Chunks) error {
@@ -185,7 +196,7 @@ func (md *MemoryDatabase) SaveChunks(path string, payload interface{}, chunks []
 	memDoc.SetPath(pat)
 	memDoc.SetPayload(payload)
 	memDoc.SetChunks(chunks)
-	md.PathToDocument[path] = memDoc
+	md.PathToDocuments[path] = &PathToDocuments{memDoc}
     return nil
 }
 
@@ -196,9 +207,9 @@ func (md *MemoryDatabase) SearchChunks(path string, embeds []autog.Embedding) ([
 	var dbembeds []autog.Embedding
 	var dberr error
 	if path == autog.DOCUMENT_PATH_NONE {
-		dbchunks, dbembeds, dberr = r.Database.GetDatabaseChunks()
+		dbchunks, dbembeds, dberr = r.Database.GetChunks()
 	} else {
-		dbchunks, dbembeds, dberr = r.Database.GetDocumentChunks(path)
+		dbchunks, dbembeds, dberr = r.Database.GetPathChunks(path)
 	}
 	if dberr != nil {
 		return scoreds, dberr

@@ -14,6 +14,7 @@ const (
 type Embedding []float64
 
 type Database interface {
+	AppendChunks(path string, payload interface{}, chunks []Chunk]) error
 	SaveChunks(path string, payload interface{}, chunks []Chunk]) error
 	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
@@ -92,7 +93,7 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 	return embeds, err
 }
 
-func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter) error {
+func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter, append bool) error {
 	if doc.GetPath() == DOCUMENT_PATH_NONE {
 		return fmt.Errorf("Document path is empty!")
 	}
@@ -120,7 +121,13 @@ func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, sp
 		chunk.SetEmbedding(embeds[i])
 	}
 
-	serr = r.Database.SaveChunks(path, payload, chunks)
+	var serr error
+	if append {
+		serr = r.Database.AppendChunks(path, payload, chunks)
+	} else {
+		serr = r.Database.SaveChunks(path, payload, chunks)
+	}
+	
 	return serr
 }
 
