@@ -307,6 +307,7 @@ type OpenAi struct {
 	
 	httpMain  *http.Client
 	httpWeak  *http.Client
+	httpEmbed *http.Client
 }
 
 func (gpt *OpenAi) InitLLM() error {
@@ -361,6 +362,13 @@ func (gpt *OpenAi) InitLLM() error {
 		},
 	}
 	gpt.httpWeak = &http.Client{
+		Timeout: time.Duration(gpt.TimeOutWeak) * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	gpt.httpEmbed = &http.Client{
 		Timeout: time.Duration(gpt.TimeOutWeak) * time.Second,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -661,32 +669,55 @@ func (gpt *OpenAi) SendMessagesStreamByWeakModel(cxt context.Context, msgs []aut
 	return gpt.SendMessagesStreamInner(cxt, msgs, reader, true)
 }
 
-func (gpt *OpenAi) Embedding(cxt context.Context, texts []string) (autog.Embedding, error) {
-	var embed Embedding
-	embeddingReq := openai.EmbeddingRequest{
-		Input: []string{
-			"The food was delicious and the waiter",
-			"Other examples of embedding request",
-		},
-		Model: openai.AdaSearchQuery,
+func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embedding, error) {
+	var embeds []autog.Embedding
+	embeddingReq := OpenaiEmbeddingRequest{
+		Input: texts,
+		Model: gpt.ModelEmbed,
 	}
-	baseReq := embeddingReq.Convert()
-	req, err := c.newRequest(ctx, http.MethodPost, c.fullURL("/embeddings", string(baseReq.Model)), withBody(baseReq))
+	request := embeddingReq.Convert()
+
+	if gpt.Verbose >= autog.VerboseShowSending {
+		reqstr, reqerr := json.Marshal(request)
+		if reqerr == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("SEND_TO_LLVM:\n %s \n", reqstr))
+		}
+	}
+
+	httpReq, err := gpt.CreateHttpRequest(cxt, "POST", "/embeddings", request)
 	if err != nil {
-		return
+		return embeds, err
 	}
 
-	if baseReq.EncodingFormat != EmbeddingEncodingFormatBase64 {
-		err = c.sendRequest(req, &res)
-		return
-	}
-
-	base64Response := &EmbeddingResponseBase64{}
-	err = c.sendRequest(req, base64Response)
+	httpRsp, err = gpt.GetHttpResponse(gpt.httpEmbed, httpReq)
 	if err != nil {
-		return
+		return embeds, err
 	}
 
-	res, err = base64Response.ToEmbeddingResponse()
-	return embed, nil
+	var response OpenaiEmbeddingResponse
+	if request.EncodingFormat != OpenaiEmbeddingEncodingFormatBase64 {
+		response = OpenaiEmbeddingResponse{}
+		if err := gpt.GetHttpBodyObject(httpRsp, &response); err != nil {
+			return embeds, err
+		}
+	} else {
+		base64Response := OpenaiEmbeddingResponseBase64{}
+		if err := gpt.GetHttpBodyObject(httpRsp, &base64Response); err != nil {
+			return embeds, err
+		}
+		response = base64Response.ToEmbeddingResponse()
+	}
+
+	if gpt.Verbose >= autog.VerboseShowReceiving {
+		repstr, reperr := json.Marshal(response)
+		if reperr == nil && gpt.VerboseLog != nil {
+			gpt.VerboseLog(fmt.Sprintf("RECV_FROM_LLVM:\n %s \n", repstr))
+		}
+	}
+
+	for i, _ := range response.Data {
+		embeds = append(embeds, response.Data[i].Embedding)
+	}
+
+	return embeds, nil
 }
