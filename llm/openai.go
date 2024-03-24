@@ -163,13 +163,13 @@ type OpenaiBase64Embedding struct {
 type OpenaiEmbeddingResponseBase64 struct {
 	Object string                  `json:"object"`
 	Data   []OpenaiBase64Embedding `json:"data"`
-	Model  EmbeddingModel          `json:"model"`
+	Model  string                  `json:"model"`
 	Usage  OpenaiUsage             `json:"usage"`
 }
 
 // ToEmbeddingResponse converts an embeddingResponseBase64 to an EmbeddingResponse.
 func (r *OpenaiEmbeddingResponseBase64) ToEmbeddingResponse() (OpenaiEmbeddingResponse, error) {
-	data := make([]Embedding, len(r.Data))
+	data := make([]OpenaiEmbedding, len(r.Data))
 
 	for i, base64Embedding := range r.Data {
 		embedding, err := base64Embedding.Embedding.Decode()
@@ -661,7 +661,7 @@ func (gpt *OpenAi) SendMessagesStreamByWeakModel(cxt context.Context, msgs []aut
 	return gpt.SendMessagesStreamInner(cxt, msgs, reader, true)
 }
 
-func (gpt *OpenAi) Embedding(cxt context.Context, text string) (Embedding, error) {
+func (gpt *OpenAi) Embedding(cxt context.Context, texts []string) (autog.Embedding, error) {
 	var embed Embedding
 	embeddingReq := openai.EmbeddingRequest{
 		Input: []string{

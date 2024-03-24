@@ -8,7 +8,8 @@ import (
 )
 
 const (
-    DOCUMENT_PATH_NONE = ""
+    DOCUMENT_PATH_NONE    = ""
+	defaultEmbeddingBatch = 1
 )
 
 type Embedding []float64
@@ -56,12 +57,13 @@ type Splitter interface {
 }
 
 type EmbeddingModel interface {
-	Embedding(cxt context.Context, text string) (Embedding, error)
+	Embeddings(cxt context.Context, texts []string) ([]Embedding, error)
 }
 
 type Rag struct {
 	Database Database
 	EmbeddingModel EmbeddingModel
+	EmbeddingBatch int
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
 
@@ -69,13 +71,26 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
 	var err error
+	var batch int
 
+	batch = defaultEmbeddingBatch
+	if r.EmbeddingBatch > 0 {
+		batch = r.EmbeddingBatch
+	}
+
+	batchcnt := 0
 	embeds := make([]Embedding, len(texts))
-	for i, text := range texts {
+	for i := 0; i < len(texts); i += batch {
+		j := i + batch
+		if j > len(texts) {
+			j = len(texts)
+		}
+		qtexts := texts[i:j]
+
 		wg.Add(1)
-		go func (i int, text string) {
+		go func (i, j int, qtexts []string) {
 			defer wg.Done()
-			embed, eerr := r.EmbeddingModel.Embedding(cxt, text)
+			es, eerr := r.EmbeddingModel.Embeddings(cxt, qtexts)
 			if eerr != nil {
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -84,8 +99,10 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 			}
 			mutex.Lock()
 			defer mutex.Unlock()
-			embeds[i] = embed
-		}(i, text)
+			for x := i; x < j; x++ {
+				embeds[x] = es[x]
+			}
+		}(i, j, qtexts)
 	}
 
 	wg.Wait()
