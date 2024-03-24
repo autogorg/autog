@@ -21,7 +21,7 @@ const (
 	defaultVendor         = "openai"
 	defaultModel          = "gpt-4-turbo-preview"
 	defaultModelWeak      = "gpt-4-turbo-preview"
-	defaultModelEmbed     = ""
+	defaultModelEmbed     = "text-embedding-3-large"
 )
 
 var (
@@ -295,7 +295,7 @@ type OpenAi struct {
 	ApiOrg      string
 	Model       string
 	ModelWeak   string
-	ModelEmbed  string
+	ModelEmbedding  string
 	Temperature     int
 	TemperatureWeak int
 	TimeOut       int
@@ -326,8 +326,8 @@ func (gpt *OpenAi) InitLLM() error {
 	if len(gpt.ModelWeak) <= 0 {
 		gpt.ModelWeak = defaultModelWeak
 	}
-	if len(gpt.ModelEmbed) <= 0 {
-		gpt.ModelEmbed = defaultModelEmbed
+	if len(gpt.ModelEmbedding) <= 0 {
+		gpt.ModelEmbedding = defaultModelEmbed
 	}
 	if gpt.Temperature <= 0 {
 		// TODO: Changed by model
@@ -673,7 +673,7 @@ func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embe
 	var embeds []autog.Embedding
 	embeddingReq := OpenaiEmbeddingRequest{
 		Input: texts,
-		Model: gpt.ModelEmbed,
+		Model: gpt.ModelEmbedding,
 	}
 	request := embeddingReq.Convert()
 
