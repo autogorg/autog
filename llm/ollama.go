@@ -1,12 +1,25 @@
 package llm
 
+import (
+	"io"
+	"fmt"
+	"time"
+	"bytes"
+	"bufio"
+	"strings"
+	"context"
+	"net/http"
+	"crypto/tls"
+	"encoding/json"
+	"autog"
+)
 
 const (
-	defaultBaseURL        = "http://localhost:11434"
-	defaultVendor         = "ollama"
-	defaultModel          = "gemma:2b"
-	defaultModelWeak      = "gemma:2b"
-	defaultModelEmbed     = "nomic-embed-text"
+	ollamaDefaultBaseURL        = "http://localhost:11434"
+	ollamaDefaultVendor         = "ollama"
+	ollamaDefaultModel          = "gemma:2b"
+	ollamaDefaultModelWeak      = "gemma:2b"
+	ollamaDefaultModelEmbed     = "nomic-embed-text"
 )
 
 // OllamaAPIError represents an error that occurred on an API
@@ -36,7 +49,7 @@ type OllamaChatCompletionResponseMessage struct {
 	Content string `json:"content"`
 }
 
-type OllamaOptions {
+type OllamaOptions struct {
 	NumCtx      int     `json:num_ctx,omitempty`
 	Seed        int     `json:seed,omitempty`
 	TopP        float32 `json:top_p,omitempty`
@@ -126,19 +139,19 @@ func (gpt *Ollama) InitLLM() error {
 		return fmt.Errorf("API Key is needed!")
 	}
 	if len(gpt.ApiBase) <= 0 {
-		gpt.ApiBase = defaultBaseURL
+		gpt.ApiBase = ollamaDefaultBaseURL
 	}
 	if len(gpt.ApiVendor) <= 0 {
-		gpt.ApiVendor = defaultVendor
+		gpt.ApiVendor = ollamaDefaultVendor
 	}
 	if len(gpt.Model) <= 0 {
-		gpt.Model = defaultModel
+		gpt.Model = ollamaDefaultModel
 	}
 	if len(gpt.ModelWeak) <= 0 {
-		gpt.ModelWeak = defaultModelWeak
+		gpt.ModelWeak = ollamaDefaultModelWeak
 	}
 	if len(gpt.ModelEmbedding) <= 0 {
-		gpt.ModelEmbedding = defaultModelEmbed
+		gpt.ModelEmbedding = ollamaDefaultModelEmbed
 	}
 	if gpt.Temperature <= 0 {
 		// TODO: Changed by model
@@ -219,23 +232,6 @@ func (gpt *Ollama) CreateChatCompletionRequest(weak, stream bool, msgs []autog.C
 		model       = gpt.ModelWeak
 		temperature = gpt.TemperatureWeak
 		maxtokens   = gpt.MaxTokensWeak
-	}
-
-	type OllamaChatCompletionRequest struct {
-		// Model is the name of the model to use.
-		Model string `json:"model"`
-		// Messages is a list of messages to use as the context for the chat completion.
-		Messages []OllamaChatCompletionRequestMessage `json:"messages"`
-		// the format to return a response in. Currently the only accepted value is json
-		Format string `json:format,omitempty`
-		// additional model parameters listed in the documentation for the Modelfile such as temperature
-		Options OllamaOptions `json:"options,omitempty"`
-		// the prompt template to use (overrides what is defined in the Modelfile)
-		Template string `json:template,omitempty`
-		// if false the response will be returned as a single response object, rather than a stream of objects
-		Stream bool `json:"stream,omitempty"`
-		// controls how long the model will stay loaded into memory following the request (default: 5m)
-		KeepAlive int `json:"keep_alive,omitempty"`
 	}
 
 	if maxtokens > 0 {
@@ -498,7 +494,7 @@ func (gpt *Ollama) SendMessagesStreamByWeakModel(cxt context.Context, msgs []aut
 	return gpt.SendMessagesStreamInner(cxt, msgs, reader, true)
 }
 
-func (gpt *Ollama) Embeddings(cxt context.Context, dimensions int, text string) (autog.Embedding, error) {
+func (gpt *Ollama) Embedding(cxt context.Context, dimensions int, text string) (autog.Embedding, error) {
 	var embed autog.Embedding
 	embeddingReq := OllamaEmbeddingRequest{
 		Prompt: text,

@@ -18,11 +18,11 @@ import (
 )
 
 const (
-	defaultBaseURL        = "https://api.openai.com/v1"
-	defaultVendor         = "openai"
-	defaultModel          = "gpt-4-turbo-preview"
-	defaultModelWeak      = "gpt-4-turbo-preview"
-	defaultModelEmbed     = "text-embedding-3-large"
+	openaiDefaultBaseURL        = "https://api.openai.com/v1"
+	openaiDefaultVendor         = "openai"
+	openaiDefaultModel          = "gpt-4-turbo-preview"
+	openaiDefaultModelWeak      = "gpt-4-turbo-preview"
+	openaiDefaultModelEmbed     = "text-embedding-3-large"
 )
 
 var (
@@ -316,19 +316,19 @@ func (gpt *OpenAi) InitLLM() error {
 		return fmt.Errorf("API Key is needed!")
 	}
 	if len(gpt.ApiBase) <= 0 {
-		gpt.ApiBase = defaultBaseURL
+		gpt.ApiBase = openaiDefaultBaseURL
 	}
 	if len(gpt.ApiVendor) <= 0 {
-		gpt.ApiVendor = defaultVendor
+		gpt.ApiVendor = openaiDefaultVendor
 	}
 	if len(gpt.Model) <= 0 {
-		gpt.Model = defaultModel
+		gpt.Model = openaiDefaultModel
 	}
 	if len(gpt.ModelWeak) <= 0 {
-		gpt.ModelWeak = defaultModelWeak
+		gpt.ModelWeak = openaiDefaultModelWeak
 	}
 	if len(gpt.ModelEmbedding) <= 0 {
-		gpt.ModelEmbedding = defaultModelEmbed
+		gpt.ModelEmbedding = openaiDefaultModelEmbed
 	}
 	if gpt.Temperature <= 0 {
 		// TODO: Changed by model
