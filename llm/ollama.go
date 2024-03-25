@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"crypto/tls"
 	"encoding/json"
-	"autog"
+	"github.com/autogorg/autog"
 )
 
 const (

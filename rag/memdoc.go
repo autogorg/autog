@@ -1,7 +1,7 @@
 package rag
 
 import (
-	"autog"
+	"github.com/autogorg/autog"
 )
 
 type MemChunk struct {

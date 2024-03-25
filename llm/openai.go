@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"encoding/base64"
 	"encoding/binary"
-	"autog"
+	"github.com/autogorg/autog"
 )
 
 const (

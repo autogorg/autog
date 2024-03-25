@@ -5,9 +5,9 @@ import (
 	"strings"
 	"context"
 	_ "embed"
-	"autog"
-	"autog/llm"
-	"autog/rag"
+	"github.com/autogorg/autog"
+	"github.com/autogorg/autog/llm"
+	"github.com/autogorg/autog/rag"
 )
 
 const (

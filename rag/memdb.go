@@ -5,7 +5,7 @@ import (
 	"math"
 	"sync"
 	"container/heap"
-	"autog"
+	"github.com/autogorg/autog"
 )
 
 const (

@@ -2,7 +2,7 @@ package rag
 
 import (
 	"fmt"
-	"autog"
+	"github.com/autogorg/autog"
 )
 
 const (
