@@ -74,7 +74,7 @@ func ExampleRag() {
 	memRag.Indexing(cxt, "/doc", docstring, splitter, false)
 
 	var scoredss []autog.ScoredChunks
-	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"autog是什么"}, 3)
+	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return
