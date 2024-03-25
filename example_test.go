@@ -75,6 +75,10 @@ func ExampleRag() {
 
 	var scoredss []autog.ScoredChunks
 	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"autog是什么"}, 3)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
 	for _, scoreds := range scoredss {
 		for _, scored := range scoreds {
 			fmt.Printf("Score:%f\n", scored.Score)
