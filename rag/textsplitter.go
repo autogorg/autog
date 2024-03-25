@@ -13,6 +13,10 @@ type TextSplitter struct {
 	ChunkSize int
 }
 
+func NewTextSplitter(chunkSize int) *TextSplitter {
+	return &TextSplitter{ChunkSize: chunkSize}
+}
+
 func (ts *TextSplitter) GetParser() autog.ParserFunction {
 	if ts.ChunkSize <= 0 {
 		ts.ChunkSize = DefaultChunkSize

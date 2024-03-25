@@ -116,7 +116,7 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 			mutex.Lock()
 			defer mutex.Unlock()
 			for x := i; x < j; x++ {
-				embeds[x] = es[x]
+				embeds[x] = es[x - 1]
 			}
 		}(i, j, qtexts)
 	}

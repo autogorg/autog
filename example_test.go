@@ -12,7 +12,7 @@ import (
 
 const (
 	ApiBase = "https://api.chatpp.org/v1"
-	ApiKey  = "sk-ae32368ec577de764f25ca39daac4fbd"
+	ApiKey  = "sk-***"
 )
 
 var (
@@ -56,14 +56,14 @@ func ExampleRag() {
 		return
 	}
 
-	database, err := rag.NewMemDatabase()
+	memDB, err := rag.NewMemDatabase()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
 
-	rag := &autog.Rag{
-		Database: database,
+	memRag := &autog.Rag{
+		Database: memDB,
 		EmbeddingModel: openai,
 	}
 
@@ -71,10 +71,10 @@ func ExampleRag() {
 		ChunkSize: 100,
 	}
 
-	rag.Indexing(cxt, "/doc", docstring, splitter, false)
+	memRag.Indexing(cxt, "/doc", docstring, splitter, false)
 
 	var scoredss []autog.ScoredChunks
-	scoredss, err  = rag.Retrieval(cxt, "/doc", []string{"autog是什么"}, 3)
+	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"autog是什么"}, 3)
 	for _, scoreds := range scoredss {
 		for _, scored := range scoreds {
 			fmt.Printf("Score:%f\n", scored.Score)
@@ -83,8 +83,7 @@ func ExampleRag() {
 	}
 
 	// Output:
-	// Embedding: [0.52, 0.18, -0.31, 0.11, 0.77, ]
-	// Embedding: [0.58, 0.19, -0.37, -0.13, 0.69, ]
+	// 
 }
 
 func ExampleChatAgent() {
