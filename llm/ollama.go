@@ -50,10 +50,10 @@ type OllamaChatCompletionResponseMessage struct {
 }
 
 type OllamaOptions struct {
-	NumCtx      int     `json:num_ctx,omitempty`
-	Seed        int     `json:seed,omitempty`
-	TopP        float32 `json:top_p,omitempty`
-	MaxTokens   int     `json:num_predict,omitempty`
+	//NumCtx      int     `json:num_ctx,omitempty`
+	//Seed        int     `json:seed,omitempty`
+	//TopP        float32 `json:top_p,omitempty`
+	//MaxTokens   int     `json:num_predict,omitempty`
 	Temperature float32 `json:"temperature,omitempty"`
 }
 
@@ -243,7 +243,7 @@ func (gpt *Ollama) CreateChatCompletionRequest(weak, stream bool, msgs []autog.C
 			Stream      : stream,
 			Options     : OllamaOptions{
 				Temperature : float32(temperature) / float32(100),
-				MaxTokens   : maxtokens,
+				// MaxTokens   : maxtokens,
 			},
 		}
 	}
