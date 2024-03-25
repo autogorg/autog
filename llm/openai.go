@@ -30,21 +30,21 @@ var (
 	donePrefix = []byte("[DONE]")
 )
 
-// APIError represents an error that occurred on an API
-type APIError struct {
+// OpanaiAPIError represents an error that occurred on an API
+type OpanaiAPIError struct {
 	StatusCode int    `json:"status_code"`
 	Message    string `json:"message"`
 	Type       string `json:"type"`
 }
 
 // Error returns a string representation of the error
-func (e APIError) Error() string {
+func (e OpanaiAPIError) Error() string {
 	return fmt.Sprintf("[%d:%s] %s", e.StatusCode, e.Type, e.Message)
 }
 
-// APIErrorResponse is the full error response that has been returned by an API.
-type APIErrorResponse struct {
-	Error APIError `json:"error"`
+// OpanaiAPIErrorResponse is the full error response that has been returned by an API.
+type OpanaiAPIErrorResponse struct {
+	Error OpanaiAPIError `json:"error"`
 }
 
 type OpenaiChatCompletionRequestMessage struct {
@@ -455,14 +455,14 @@ func (gpt *OpenAi) CheckHttpResponseSuccess(httpRsp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("Failed to read from body: %w", err)
 	}
-	var result APIErrorResponse
+	var result OpanaiAPIErrorResponse
 	if err := json.Unmarshal(data, &result); err != nil {
-		apiError := APIError{
+		aPIError := OpanaiAPIError{
 			StatusCode: httpRsp.StatusCode,
 			Type:       "Unexpected",
 			Message:    string(data),
 		}
-		return apiError
+		return aPIError
 	}
 	result.Error.StatusCode = httpRsp.StatusCode
 	return result.Error
