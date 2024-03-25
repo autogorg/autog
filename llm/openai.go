@@ -670,11 +670,14 @@ func (gpt *OpenAi) SendMessagesStreamByWeakModel(cxt context.Context, msgs []aut
 	return gpt.SendMessagesStreamInner(cxt, msgs, reader, true)
 }
 
-func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embedding, error) {
+func (gpt *OpenAi) Embeddings(cxt context.Context, dimensions int, texts []string) ([]autog.Embedding, error) {
 	var embeds []autog.Embedding
 	embeddingReq := OpenaiEmbeddingRequest{
 		Input: texts,
 		Model: gpt.ModelEmbedding,
+	}
+	if dimensions > 0 {
+		embeddingReq.Dimensions = dimensions
 	}
 	request := embeddingReq.Convert()
 

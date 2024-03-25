@@ -18,7 +18,7 @@ const (
 	ErrChunkNotExists  = "Chunk not exists!"
 )
 
-type ScoredChunkIndex {
+type ScoredChunkIndex struct {
 	Index int
 	Score float64
 }
@@ -53,6 +53,12 @@ func (m *MemDocuments) Append(doc *MemDocument) {
 
 type MemoryDatabase struct {
 	PathToDocuments map[string]*MemDocuments
+}
+
+func NewMemDatabase() (*MemoryDatabase, error) {
+	md  := &MemoryDatabase{}
+	err := md.InitDatabase()
+	return md, err 
 }
 
 func min(a, b int) int {
@@ -114,7 +120,7 @@ func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qsi, dsi 
 			sci.Index += dsi
 			schunk := &autog.ScoredChunk{
 				Chunk : (*dbchunks)[sci.Index],
-				Score : sci.Score
+				Score : sci.Score,
 			}
 			scoredChunks[qi] = append(scoredChunks[qi], schunk)
 		}
@@ -123,10 +129,15 @@ func CosSim(qembeds, dbembeds [][]float64, qnorms, dbnorms *[]float64, qsi, dsi 
 	channel <- scoredChunks
 }
 
+func (md *MemoryDatabase) InitDatabase() error {
+	md.PathToDocuments = make(map[string]*MemDocuments)
+	return nil
+}
+
 func (md *MemoryDatabase) GetDocuments(path string) ([]*MemDocument, error) {
 	docs, ok := md.PathToDocuments[path];
 	if !ok {
-		return docs, return fmt.Errorf(ErrDocNotExists)
+		return docs, fmt.Errorf(ErrDocNotExists)
 	}
 	return docs, nil
 }
@@ -178,7 +189,7 @@ func (md *MemoryDatabase) GetChunks() ([]autog.Chunk, []autog.Embedding, error) 
 	return chunks, embeddings, nil
 }
 
-func (md *MemoryDatabase) AppendChunks(path string, payload interface{}, chunks []Chunk]) error {
+func (md *MemoryDatabase) AppendChunks(path string, payload interface{}, chunks []Chunk) error {
 	if _, ok := md.PathToDocuments[path]; !ok {
 		return md.SaveChunks(path, payload, chunks)
 	}

@@ -74,18 +74,18 @@ func (chunk *MemChunk) SetPayload(payload interface{}) {
 	}
 }
 
-func (chunk *MemChunk) GetEmbedding() Embedding {
+func (chunk *MemChunk) GetEmbedding() autog.Embedding {
 	return chunk.Embedding
 }
 
-func (chunk *MemChunk) SetEmbedding(embed Embedding) {
+func (chunk *MemChunk) SetEmbedding(embed autog.Embedding) {
 	chunk.Embedding = embed
 }
 
 type MemDocument struct {
 	Path     string      `json:"Path"`
 	Payload  string      `json:"Payload"`
-	Chunks   []*DocChunk `json:"Chunks"`
+	Chunks   []*MemChunk `json:"Chunks"`
 }
 
 func (doc *MemDocument) GetPath() string {

@@ -4,14 +4,30 @@ import (
 	"fmt"
 	"sync"
 	"context"
+	"strings"
 )
 
 const (
-    DOCUMENT_PATH_NONE    = ""
-	defaultEmbeddingBatch = 1
+    DOCUMENT_PATH_NONE         = ""
+	defaultEmbeddingBatch      = 1
+	defaultEmbeddingDimensions = 0
 )
 
 type Embedding []float64
+
+func (e *Embedding) String(d int) string {
+	buf := strings.Builder{}
+	buf.WriteString("[")
+	for _, f := range *e {
+		ff := "%f"
+		if d > 0 {
+			ff = "%." + fmt.Sprintf("%d", d) + "f"
+		}
+		buf.WriteString(fmt.Sprintf(ff + ", ", f))
+	}
+	buf.WriteString("]")
+	return buf.String()
+}
 
 type Database interface {
 	AppendChunks(path string, payload interface{}, chunks []Chunk) error
@@ -56,13 +72,14 @@ type Splitter interface {
 }
 
 type EmbeddingModel interface {
-	Embeddings(cxt context.Context, texts []string) ([]Embedding, error)
+	Embeddings(cxt context.Context, dimensions int, texts []string) ([]Embedding, error)
 }
 
 type Rag struct {
 	Database Database
 	EmbeddingModel EmbeddingModel
 	EmbeddingBatch int
+	EmbeddingDimensions int
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
 
@@ -77,6 +94,11 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		batch = r.EmbeddingBatch
 	}
 
+	dimensions := defaultEmbeddingDimensions
+	if r.EmbeddingDimensions > 0 {
+		dimensions = r.EmbeddingDimensions
+	}
+
 	embeds := make([]Embedding, len(texts))
 	for i := 0; i < len(texts); i += batch {
 		j := i + batch
@@ -88,7 +110,7 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		wg.Add(1)
 		go func (i, j int, qtexts []string) {
 			defer wg.Done()
-			es, eerr := r.EmbeddingModel.Embeddings(cxt, qtexts)
+			es, eerr := r.EmbeddingModel.Embeddings(cxt, dimensions, qtexts)
 			if eerr != nil {
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -146,13 +168,17 @@ func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, sp
 	return serr
 }
 
-func (r *Rag) Retrieval(cxt context.Context, queries []string, path string, topk int) ([]ScoredChunks, error) {
+func (r *Rag) Retrieval(cxt context.Context, path string, queries []string, topk int) ([]ScoredChunks, error) {
 	var scoreds []ScoredChunks
-	qembeds, berr := r.Embeddings(cxt, queries)
-	if berr != nil {
-		return scoreds, berr
+	qembeds, err := r.Embeddings(cxt, queries)
+	if err != nil {
+		return scoreds, err
 	}
-	return r.Database.SearchChunks(path, qembeds, topk)
+	scoreds, err = r.Database.SearchChunks(path, qembeds, topk)
+	if err != nil {
+		return scoreds, err
+	}
+	return r.doPostRank(queries, scoreds)
 }
 
 func (r *Rag) doPostRank(queries []string, chunks []ScoredChunks) ([]ScoredChunks, error) {
