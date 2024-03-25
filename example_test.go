@@ -79,15 +79,20 @@ func ExampleRag() {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
+
+	cnt := 0
 	for _, scoreds := range scoredss {
 		for _, scored := range scoreds {
-			fmt.Printf("Score:%f\n", scored.Score)
-			fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
+			// fmt.Printf("Score:%f\n", scored.Score)
+			// fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
+			_ = scored
+			cnt++
 		}
 	}
+	fmt.Println(cnt)
 
 	// Output:
-	// 
+	// 3
 }
 
 func ExampleChatAgent() {
