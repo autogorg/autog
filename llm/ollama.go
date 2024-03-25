@@ -76,7 +76,7 @@ type OllamaChatCompletionRequest struct {
 
 type OllamaChatCompletionResponse struct {
 	Model      string                                `json:"model"`
-	CreatedAt  int                                   `json:"created_at"`
+	CreatedAt  string                                `json:"created_at"`
 	Done       bool                                  `json:"done"`
 	Message    OllamaChatCompletionResponseMessage   `json:"message,omitempty"`
 	TotalDuration      int `json:"total_duration,omitempty"`
@@ -89,7 +89,7 @@ type OllamaChatCompletionResponse struct {
 
 type OllamaChatCompletionStreamResponse struct {
 	Model      string                                `json:"model"`
-	CreatedAt  int                                   `json:"created_at"`
+	CreatedAt  string                                `json:"created_at"`
 	Done       bool                                  `json:"done"`
 	Message    OllamaChatCompletionResponseMessage   `json:"message,omitempty"`
 	TotalDuration      int `json:"total_duration,omitempty"`
