@@ -23,21 +23,21 @@ See `ExampleChatAgent` in [example_test.go](./example_test.go)
 See `ExampleRag` in [example_test.go](./example_test.go)
 ```go
     // Step 1. Create a RAG with a memory vector database
-	memDB, _ := rag.NewMemDatabase()
-	memRag := &autog.Rag{ Database: memDB, EmbeddingModel: openai }
+    memDB, _ := rag.NewMemDatabase()
+    memRag := &autog.Rag{ Database: memDB, EmbeddingModel: openai }
 
     // Step 2. Split `docstring` into chunks, and save to database
-	splitter := &rag.TextSplitter{ChunkSize: 100}
-	memRag.Indexing(cxt, "/doc", docstring, splitter, false)
+    splitter := &rag.TextSplitter{ChunkSize: 100}
+    memRag.Indexing(cxt, "/doc", docstring, splitter, false)
 
     // Step 3. Search database by question `what is AutoG?`
-	scoredss, _ := memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
-	for _, scoreds := range scoredss {
-		for _, scored := range scoreds {
-			fmt.Printf("Score:%f\n", scored.Score)
-			fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
-		}
-	}
+    scoredss, _ := memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
+    for _, scoreds := range scoredss {
+        for _, scored := range scoreds {
+            fmt.Printf("Score:%f\n", scored.Score)
+            fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
+        }
+    }
 ```
 
 # AutoG是一个轻量、完整、灵活的Agent开发框架
@@ -63,19 +63,19 @@ See `ExampleChatAgent` in [example_test.go](./example_test.go)
 See `ExampleRag` in [example_test.go](./example_test.go)
 ```go
     // 步骤 1. 创建一个RAG并初始化，使其使用内存向量数据库
-	memDB, _ := rag.NewMemDatabase()
-	memRag := &autog.Rag{ Database: memDB, EmbeddingModel: openai }
+    memDB, _ := rag.NewMemDatabase()
+    memRag := &autog.Rag{ Database: memDB, EmbeddingModel: openai }
 
     // 步骤 2. 将 `docstring` 分割成小块块，并保存到数据库
-	splitter := &rag.TextSplitter{ChunkSize: 100}
-	memRag.Indexing(cxt, "/doc", docstring, splitter, false)
+    splitter := &rag.TextSplitter{ChunkSize: 100}
+    memRag.Indexing(cxt, "/doc", docstring, splitter, false)
 
     // 步骤 2. 用问题 `what is AutoG?` 去检索向量数据库
-	scoredss, _ := memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
-	for _, scoreds := range scoredss {
-		for _, scored := range scoreds {
-			fmt.Printf("Score:%f\n", scored.Score)
-			fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
-		}
-	}
+    scoredss, _ := memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
+    for _, scoreds := range scoredss {
+        for _, scored := range scoreds {
+            fmt.Printf("Score:%f\n", scored.Score)
+            fmt.Printf("Content:[%s]\n", scored.Chunk.GetContent())
+        }
+    }
 ```
