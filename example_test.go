@@ -56,8 +56,14 @@ func ExampleRag() {
 		return
 	}
 
+	database, err := rag.NewMemDatabase()
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+
 	rag := &autog.Rag{
-		Database: rag.NewMemDatabase(),
+		Database: database,
 		EmbeddingModel: openai,
 	}
 

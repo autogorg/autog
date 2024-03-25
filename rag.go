@@ -49,10 +49,6 @@ type Chunk interface {
 	SetPath(path string)
 	GetQuery() string
 	SetQuery(query string)
-	GetLineStart() int
-	SetLineStart(i int)
-	GetLineEnd() int
-	SetLineEnd(i int)
 	GetByteStart() int
 	SetByteStart(i int)
 	GetByteEnd() int

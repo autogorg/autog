@@ -19,14 +19,14 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 	}
 	n := ts.ChunkSize
 	parser := func (path string, payload interface{}) ([]autog.Chunk, error) {
+		var chunks []autog.Chunk
 		if path == autog.DOCUMENT_PATH_NONE {
-			return fmt.Errorf("Document path is empty!")
+			return chunks, fmt.Errorf("Document path is empty!")
 		}
 		content, ok := payload.(string)
 		if !ok {
-			return fmt.Errorf("Payload is not string type!")
+			return chunks, fmt.Errorf("Payload is not string type!")
 		}
-		var chunks []autog.Chunk
 		runes := []rune(content)
 		i := 0
 		for i < len(runes) {

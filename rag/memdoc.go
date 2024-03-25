@@ -116,11 +116,11 @@ func (doc *MemDocument) GetChunks() []autog.Chunk {
 }
 
 func (doc *MemDocument) SetChunks(chunks []autog.Chunk) {
-	var chunks []*MemChunk
+	var memchunks []*MemChunk
 	for _, chunk := range chunks {
 		if memchunk, ok := chunk.(*MemChunk); ok {
-			chunks = append(chunks, memchunk)
+			memchunks = append(memchunks, memchunk)
 		}
 	}
-	doc.Chunks = memchunk
+	doc.Chunks = memchunks
 }
