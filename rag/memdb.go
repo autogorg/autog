@@ -136,14 +136,14 @@ func (md *MemoryDatabase) InitDatabase() error {
 func (md *MemoryDatabase) GetDocuments(path string) (*MemDocuments, error) {
 	docs, ok := md.PathToDocuments[path];
 	if !ok {
-		return docs, fmt.Errorf(ErrDocNotExists)
+		return docs, fmt.Errorf("GetDocuments by [" + path + "] ERROR: " + ErrDocNotExists)
 	}
 	return docs, nil
 }
 
 func (md *MemoryDatabase) DelDocuments(path string) error {
 	if _, ok := md.PathToDocuments[path]; !ok {
-		return fmt.Errorf(ErrDocNotExists)
+		return fmt.Errorf("DelDocuments by [" + path + "] ERROR: " + ErrDocNotExists)
 	}
 	delete(md.PathToDocuments, path)
 	return nil
@@ -162,7 +162,7 @@ func (md *MemoryDatabase) GetPathChunks(path string) ([]autog.Chunk, []autog.Emb
 	var embeddings []autog.Embedding
 	docs, ok := md.PathToDocuments[path];
 	if !ok {
-		return chunks, embeddings, fmt.Errorf(ErrDocNotExists)
+		return chunks, embeddings, fmt.Errorf("GetPathChunks by [" + path + "] ERROR: " + ErrDocNotExists)
 	}
 	for _, doc := range *docs {
 		for _, chunk := range doc.Chunks {
