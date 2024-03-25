@@ -6,6 +6,7 @@ import (
 	"time"
 	"bytes"
 	"bufio"
+	"math"
 	"strings"
 	"context"
 	"net/http"
@@ -279,7 +280,7 @@ type OpenaiEmbeddingRequestTokens struct {
 }
 
 func (r OpenaiEmbeddingRequestTokens) Convert() OpenaiEmbeddingRequest {
-	return EmbeddingRequest{
+	return OpenaiEmbeddingRequest{
 		Input:          r.Input,
 		Model:          r.Model,
 		User:           r.User,
@@ -684,17 +685,18 @@ func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embe
 		}
 	}
 
-	httpReq, err := gpt.CreateHttpRequest(cxt, "POST", "/embeddings", request)
-	if err != nil {
-		return embeds, err
+	httpReq, cerr := gpt.CreateHttpRequest(cxt, "POST", "/embeddings", request)
+	if cerr != nil {
+		return embeds, cerr
 	}
 
-	httpRsp, err = gpt.GetHttpResponse(gpt.httpEmbed, httpReq)
-	if err != nil {
-		return embeds, err
+	httpRsp, gerr := gpt.GetHttpResponse(gpt.httpEmbed, httpReq)
+	if gerr != nil {
+		return embeds, gerr
 	}
 
 	var response OpenaiEmbeddingResponse
+	var rerr error
 	if request.EncodingFormat != OpenaiEmbeddingEncodingFormatBase64 {
 		response = OpenaiEmbeddingResponse{}
 		if err := gpt.GetHttpBodyObject(httpRsp, &response); err != nil {
@@ -705,7 +707,10 @@ func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embe
 		if err := gpt.GetHttpBodyObject(httpRsp, &base64Response); err != nil {
 			return embeds, err
 		}
-		response = base64Response.ToEmbeddingResponse()
+		response, rerr = base64Response.ToEmbeddingResponse()
+		if rerr != nil {
+			return embeds, rerr
+		}
 	}
 
 	if gpt.Verbose >= autog.VerboseShowReceiving {
@@ -716,7 +721,11 @@ func (gpt *OpenAi) Embeddings(cxt context.Context, texts []string) ([]autog.Embe
 	}
 
 	for i, _ := range response.Data {
-		embeds = append(embeds, response.Data[i].Embedding)
+		embed := autog.Embedding{}
+		for _, f := range response.Data[i].Embedding {
+			embed = append(embed, float64(f))
+		}
+		embeds = append(embeds, embed)
 	}
 
 	return embeds, nil

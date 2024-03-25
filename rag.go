@@ -1,10 +1,9 @@
 package autog
 
 import (
-  "math"
-  "time"
-  "sync"
-  "context"
+	"fmt"
+	"sync"
+	"context"
 )
 
 const (
@@ -15,12 +14,12 @@ const (
 type Embedding []float64
 
 type Database interface {
-	AppendChunks(path string, payload interface{}, chunks []Chunk]) error
-	SaveChunks(path string, payload interface{}, chunks []Chunk]) error
+	AppendChunks(path string, payload interface{}, chunks []Chunk) error
+	SaveChunks(path string, payload interface{}, chunks []Chunk) error
 	SearchChunks(path string, embeds []Embedding, topk int) ([]ScoredChunks, error)
 }
 
-type ScoredChunk {
+type ScoredChunk struct {
 	Chunk Chunk
 	Score float64
 }
@@ -78,7 +77,6 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		batch = r.EmbeddingBatch
 	}
 
-	batchcnt := 0
 	embeds := make([]Embedding, len(texts))
 	for i := 0; i < len(texts); i += batch {
 		j := i + batch
@@ -110,8 +108,8 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 	return embeds, err
 }
 
-func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter, append bool) error {
-	if doc.GetPath() == DOCUMENT_PATH_NONE {
+func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter, overwrite bool) error {
+	if path == DOCUMENT_PATH_NONE {
 		return fmt.Errorf("Document path is empty!")
 	}
 	parser := splitter.GetParser()
@@ -139,7 +137,7 @@ func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, sp
 	}
 
 	var serr error
-	if append {
+	if !overwrite {
 		serr = r.Database.AppendChunks(path, payload, chunks)
 	} else {
 		serr = r.Database.SaveChunks(path, payload, chunks)
@@ -154,10 +152,10 @@ func (r *Rag) Retrieval(cxt context.Context, queries []string, path string, topk
 	if berr != nil {
 		return scoreds, berr
 	}
-	return r.Database.SearchChunks(path, qemneds, topk)
+	return r.Database.SearchChunks(path, qembeds, topk)
 }
 
-func (r *Rag) doPostRank(queries []string, chunks []ScoredChunk) ([]ScoredChunks, error) {
+func (r *Rag) doPostRank(queries []string, chunks []ScoredChunks) ([]ScoredChunks, error) {
 	if r.PostRank == nil {
 		return chunks, nil
 	}
