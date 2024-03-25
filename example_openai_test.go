@@ -71,8 +71,12 @@ func ExampleOpenAiRag() {
 		ChunkSize: 100,
 	}
 
-	memRag.Indexing(cxt, "/doc", openaiDocstring, splitter, false)
-
+	err = memRag.Indexing(cxt, "/doc", openaiDocstring, splitter, false)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+	
 	var scoredss []autog.ScoredChunks
 	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
 	if err != nil {

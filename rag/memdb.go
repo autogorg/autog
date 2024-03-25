@@ -160,7 +160,7 @@ func (md *MemoryDatabase) GetPaths() ([]string, error) {
 func (md *MemoryDatabase) GetPathChunks(path string) ([]autog.Chunk, []autog.Embedding, error) {
 	var chunks []autog.Chunk
 	var embeddings []autog.Embedding
-	docs, ok := md.PathToDocuments[path];
+	docs, ok := md.PathToDocuments[path]
 	if !ok {
 		return chunks, embeddings, fmt.Errorf("GetPathChunks by [" + path + "] ERROR: " + ErrDocNotExists)
 	}
