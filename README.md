@@ -9,6 +9,7 @@
 ### Examples
 
 See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.go)
+See `ExampleOllamaChatAgent` in [example_ollama_test.go](./example_ollama_test.go)
 ```go
     // Step 1. A complete agent that supports continuous chat conversations
     &autog.Agent{}.Prompt(system, longHistory, shortHistory).
@@ -21,6 +22,7 @@ See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.g
 ```
 
 See `ExampleOpenAiRag` in [example_openai_test.go](./example_openai_test.go)
+See `ExampleOllamaRag` in [example_ollama_test.go](./example_ollama_test.go)
 ```go
     // Step 1. Create a RAG with a memory vector database
     memDB, _ := rag.NewMemDatabase()
@@ -49,6 +51,7 @@ See `ExampleOpenAiRag` in [example_openai_test.go](./example_openai_test.go)
 ### 样例
 
 See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.go)
+See `ExampleOllamaChatAgent` in [example_ollama_test.go](./example_ollama_test.go)
 ```go
     // 步骤 1. 一个完整的支持连续聊天对话的智能体
     &autog.Agent{}.Prompt(system, longHistory, shortHistory).
@@ -61,6 +64,7 @@ See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.g
 ```
 
 See `ExampleOpenAiRag` in [example_openai_test.go](./example_openai_test.go)
+See `ExampleOllamaRag` in [example_ollama_test.go](./example_ollama_test.go)
 ```go
     // 步骤 1. 创建一个RAG并初始化，使其使用内存向量数据库
     memDB, _ := rag.NewMemDatabase()
