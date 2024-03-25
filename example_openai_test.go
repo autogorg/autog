@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	ApiBase = "https://api.chatpp.org/v1"
-	ApiKey  = "sk-***"
+	OpenAIApiBase = "https://api.chatpp.org/v1"
+	OpenAIApiKey  = "sk-***"
 )
 
 var (
 	//go:embed README.md
-	docstring string
+	openaiDocstring string
 ) 
 
-func ExampleEmbeddings() {
-	openai := &llm.OpenAi{ ApiBase: ApiBase, ApiKey: ApiKey}
+func ExampleOpenAiEmbeddings() {
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
@@ -46,10 +46,10 @@ func ExampleEmbeddings() {
 	// Embedding: [0.58, 0.19, -0.37, -0.13, 0.69, ]
 }
 
-func ExampleRag() {
+func ExampleOpenAiRag() {
 	cxt := context.Background()
 
-	openai := &llm.OpenAi{ ApiBase: ApiBase, ApiKey: ApiKey}
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
@@ -71,7 +71,7 @@ func ExampleRag() {
 		ChunkSize: 100,
 	}
 
-	memRag.Indexing(cxt, "/doc", docstring, splitter, false)
+	memRag.Indexing(cxt, "/doc", openaiDocstring, splitter, false)
 
 	var scoredss []autog.ScoredChunks
 	scoredss, err  = memRag.Retrieval(cxt, "/doc", []string{"what is AutoG?"}, 3)
@@ -95,12 +95,12 @@ func ExampleRag() {
 	// 3
 }
 
-func ExampleChatAgent() {
+func ExampleOpenAiChatAgent() {
 	type ChatAgent struct {
 		autog.Agent
 	}
 
-	openai := &llm.OpenAi{ ApiBase: ApiBase, ApiKey: ApiKey}
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)

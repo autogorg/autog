@@ -104,7 +104,7 @@ type OllamaEmbeddingRequest struct {
 	Model          string  `json:"model"`
 	Prompt         string  `json:"prompt"`
 	// additional model parameters listed in the documentation for the Modelfile such as temperature
-	Options OllamaOptions `json:"options,omitempty"`
+	// Options OllamaOptions `json:"options,omitempty"`
 }
 
 type OllamaEmbeddingResponse struct {
@@ -135,9 +135,11 @@ type Ollama struct {
 
 
 func (gpt *Ollama) InitLLM() error {
+	/*
+	// No Need!
 	if len(gpt.ApiKey) <= 0 {
 		return fmt.Errorf("API Key is needed!")
-	}
+	}*/
 	if len(gpt.ApiBase) <= 0 {
 		gpt.ApiBase = ollamaDefaultBaseURL
 	}

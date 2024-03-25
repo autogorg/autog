@@ -8,7 +8,7 @@
 
 ### Examples
 
-See `ExampleChatAgent` in [example_test.go](./example_test.go)
+See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.go)
 ```go
     // Step 1. A complete agent that supports continuous chat conversations
     &autog.Agent{}.Prompt(system, longHistory, shortHistory).
@@ -20,7 +20,7 @@ See `ExampleChatAgent` in [example_test.go](./example_test.go)
         Summarize(nil, summary, prefix, true) // force = true
 ```
 
-See `ExampleRag` in [example_test.go](./example_test.go)
+See `ExampleOpenAiRag` in [example_openai_test.go](./example_openai_test.go)
 ```go
     // Step 1. Create a RAG with a memory vector database
     memDB, _ := rag.NewMemDatabase()
@@ -48,7 +48,7 @@ See `ExampleRag` in [example_test.go](./example_test.go)
 
 ### 样例
 
-See `ExampleChatAgent` in [example_test.go](./example_test.go)
+See `ExampleOpenAiChatAgent` in [example_openai_test.go](./example_openai_test.go)
 ```go
     // 步骤 1. 一个完整的支持连续聊天对话的智能体
     &autog.Agent{}.Prompt(system, longHistory, shortHistory).
@@ -60,7 +60,7 @@ See `ExampleChatAgent` in [example_test.go](./example_test.go)
         Summarize(nil, summary, prefix, true) // force = true
 ```
 
-See `ExampleRag` in [example_test.go](./example_test.go)
+See `ExampleOpenAiRag` in [example_openai_test.go](./example_openai_test.go)
 ```go
     // 步骤 1. 创建一个RAG并初始化，使其使用内存向量数据库
     memDB, _ := rag.NewMemDatabase()
