@@ -24,10 +24,10 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 		ts.ChunkSize = DefaultChunkSize
 	}
 	if ts.Overlap <= 0.01 {
-		ts.ChunkSize = 0.01
+		ts.Overlap = 0.01
 	}
 	if ts.Overlap >= 0.99 {
-		ts.ChunkSize = 0.99
+		ts.Overlap = 0.99
 	}
 	n := ts.ChunkSize
 	f := 1.0 - ts.Overlap
