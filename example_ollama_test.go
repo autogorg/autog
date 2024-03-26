@@ -71,6 +71,7 @@ func ExampleOllamaRag() {
 
 	splitter := &rag.TextSplitter{
 		ChunkSize: 100,
+		Overlap: 0.25,
 	}
 
 	err = memRag.Indexing(cxt, "/doc", ollamaDocstring, splitter, false)

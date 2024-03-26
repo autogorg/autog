@@ -7,10 +7,12 @@ import (
 
 const (
 	DefaultChunkSize = 1500
+	DefaultOverloap  = 0.01
 )
 
 type TextSplitter struct {
 	ChunkSize int
+	Overlap float64
 }
 
 func NewTextSplitter(chunkSize int) *TextSplitter {
@@ -21,7 +23,14 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 	if ts.ChunkSize <= 0 {
 		ts.ChunkSize = DefaultChunkSize
 	}
+	if ts.Overlap <= 0.01 {
+		ts.ChunkSize = 0.01
+	}
+	if ts.Overlap >= 0.99 {
+		ts.ChunkSize = 0.99
+	}
 	n := ts.ChunkSize
+	f := 1.0 - ts.Overlap
 	parser := func (path string, payload interface{}) ([]autog.Chunk, error) {
 		var chunks []autog.Chunk
 		if path == autog.DOCUMENT_PATH_NONE {
@@ -34,10 +43,10 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 		runes := []rune(content)
 		i := 0
 		for i < len(runes) {
-			//  0.5 * n -- 1.5 * n 
-			j := min(i+int(1.5*float64(n)), len(runes))
+			//  f * n -- (1.0 + f) * n 
+			j := min(i+int((1.0+f)*float64(n)), len(runes))
 			found := false
-			for j > i+int(0.5*float64(n)) {
+			for j > i+int(f*float64(n)) {
 				chunk := string(runes[i:j])
 				if chunk[len(chunk)-1] == '.' || chunk[len(chunk)-1] == '\n' {
 					found = true
