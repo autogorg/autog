@@ -116,6 +116,7 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 			msgs = append(msgs, m)
 		}
 	}
+	msgs = append(msgs, msg)
 	a.PromptMessages = msgs
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
 	a.LLM = llm
