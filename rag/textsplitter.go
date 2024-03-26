@@ -7,7 +7,6 @@ import (
 
 const (
 	DefaultChunkSize = 1500
-	DefaultOverloap  = 0.01
 )
 
 type TextSplitter struct {
