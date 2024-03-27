@@ -240,7 +240,7 @@ func (md *MemoryDatabase) SearchChunks(path string, embeds []autog.Embedding, to
 
 			wg.Add(1)
 			go func(qi int, di int, qj int, dj int) {
-				wg.Done()
+				defer wg.Done()
 				CosSim(embeds[qi:qj], dbembeds[di:dj], &norms, &dbnorms, qi, di, topk, &dbchunks, channel)
 			}(qi, di, qj, dj)
 		}
