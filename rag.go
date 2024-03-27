@@ -11,6 +11,7 @@ const (
     DOCUMENT_PATH_NONE         = ""
 	defaultEmbeddingBatch      = 1
 	defaultEmbeddingDimensions = 0
+	defaultEmbeddingRoutines   = 2
 )
 
 type Embedding []float64
@@ -75,6 +76,7 @@ type Rag struct {
 	Database Database
 	EmbeddingModel EmbeddingModel
 	EmbeddingBatch int
+	EmbeddingRoutines int
 	EmbeddingDimensions int
 	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
 }
@@ -90,10 +92,18 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		batch = r.EmbeddingBatch
 	}
 
+	routines := defaultEmbeddingRoutines
+	if r.EmbeddingRoutines > 0 {
+		routines = r.EmbeddingRoutines
+	}
+
 	dimensions := defaultEmbeddingDimensions
 	if r.EmbeddingDimensions > 0 {
 		dimensions = r.EmbeddingDimensions
 	}
+
+	// Create slots
+	concurrents := make(chan struct{}, routines)
 
 	embeds := make([]Embedding, len(texts))
 	for i := 0; i < len(texts); i += batch {
@@ -103,9 +113,17 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		}
 		qtexts := texts[i:j]
 
+		// Waiting for free slot
+		concurrents <- struct{}{}
+
 		wg.Add(1)
 		go func (i, j int, qtexts []string) {
 			defer wg.Done()
+			defer func() {
+				// Free a slot
+				<-concurrents
+			}()
+
 			es, eerr := r.EmbeddingModel.Embeddings(cxt, dimensions, qtexts)
 			if eerr != nil {
 				mutex.Lock()
