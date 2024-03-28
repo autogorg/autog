@@ -145,6 +145,9 @@ func (r *Rag) Embeddings(cxt context.Context, stage EmbeddingStage, texts []stri
 					finished = finished + (j - i)
 				}
 				retry = r.doEmbeddingCallback(stage, texts, embeds, i, j, finished, tried, eerr)
+				if retry && eerr == nil {
+					finished = finished - (j - i)
+				}
 				mutex.Unlock()
 				if retry {
 					tried++
