@@ -9,9 +9,9 @@ import (
 
 const (
     DOCUMENT_PATH_NONE         = ""
-	defaultEmbeddingBatch      = 1
+	defaultEmbeddingBatch      = 2
 	defaultEmbeddingDimensions = 0
-	defaultEmbeddingRoutines   = 2
+	defaultEmbeddingRoutines   = 5
 )
 
 type EmbeddingStage int
