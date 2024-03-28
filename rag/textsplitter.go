@@ -7,7 +7,7 @@ import (
 
 const (
 	DefaultChunkSize  = 512
-	DefaultMinOverlap = 0.01
+	DefaultMinOverlap = 0.00
 	DefaultMaxOverlap = 0.99
 )
 
