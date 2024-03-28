@@ -65,6 +65,15 @@ func ExampleOpenAiRag() {
 	memRag := &autog.Rag{
 		Database: memDB,
 		EmbeddingModel: openai,
+		EmbeddingCallback: func (stage EmbeddingStage, texts []string, embeds []Embedding, i, j int, finished, tried int, err error) bool {
+			errStr := ""
+			if err != nil {
+				errStr = fmt.Sprintf("%s", err)
+			}
+			fmt.Printf("Stage: %d, Total: %d, Finished: %d, Tried: %d, Err: %s\n", 
+				stage, len(texts), finished, tried, errStr)
+			return tried < 1
+		}
 	}
 
 	splitter := &rag.TextSplitter{

@@ -14,6 +14,13 @@ const (
 	defaultEmbeddingRoutines   = 2
 )
 
+type EmbeddingStage int
+
+const (
+	EmbeddingStageIndexing  EmbeddingStage = iota
+	EmbeddingStageRetrieval
+)
+
 type Embedding []float64
 
 func (e *Embedding) String(d int) string {
@@ -78,10 +85,10 @@ type Rag struct {
 	EmbeddingBatch int
 	EmbeddingRoutines int
 	EmbeddingDimensions int
-	PostRank func (r *Rag, queries []string, chunks []ScoredChunks) ([]ScoredChunks, error)
+	EmbeddingCallback  func (stage EmbeddingStage, texts []string, embeds []Embedding, i, j int, finished, tried int, err error) bool
 }
 
-func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, error) {
+func (r *Rag) Embeddings(cxt context.Context, stage EmbeddingStage, texts []string) ([]Embedding, error) {
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
 	var err error
@@ -102,10 +109,10 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 		dimensions = r.EmbeddingDimensions
 	}
 
+	finished := 0
 	// Create slots
 	concurrents := make(chan struct{}, routines)
-
-	embeds := make([]Embedding, len(texts))
+	embeds   := make([]Embedding, len(texts))
 	for i := 0; i < len(texts); i += batch {
 		j := i + batch
 		if j > len(texts) {
@@ -124,17 +131,26 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 				<-concurrents
 			}()
 
-			es, eerr := r.EmbeddingModel.Embeddings(cxt, dimensions, qtexts)
-			if eerr != nil {
+			tried := 0
+			retry := false
+			for {
+				es, eerr := r.EmbeddingModel.Embeddings(cxt, dimensions, qtexts)
 				mutex.Lock()
-				defer mutex.Unlock()
-				err = eerr
-				return
-			}
-			mutex.Lock()
-			defer mutex.Unlock()
-			for x := i; x < j; x++ {
-				embeds[x] = es[x - i]
+				if eerr != nil {
+					err = eerr
+				} else {
+					for x := i; x < j; x++ {
+						embeds[x] = es[x - i]
+					}
+					finished = finished + (j - i)
+				}
+				retry = r.doEmbeddingCallback(stage, texts, embeds, i, j, finished, tried, eerr)
+				mutex.Unlock()
+				if retry {
+					tried++
+					continue
+				}
+				break
 			}
 		}(i, j, qtexts)
 	}
@@ -142,6 +158,13 @@ func (r *Rag) Embeddings(cxt context.Context, texts []string) ([]Embedding, erro
 	wg.Wait()
 
 	return embeds, err
+}
+
+func (r *Rag) doEmbeddingCallback(stage EmbeddingStage, texts []string, embeds []Embedding, i, j int, finished, tried int, err error) bool {
+	if r.EmbeddingCallback == nil {
+		return false
+	}
+	return r.EmbeddingCallback(stage, texts, embeds, i, j, finished, tried, err)
 }
 
 func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, splitter Splitter, overwrite bool) error {
@@ -160,7 +183,7 @@ func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, sp
 		qs = append(qs, chunk.GetQuery())
 	}
 
-	embeds, eerr := r.Embeddings(cxt, qs)
+	embeds, eerr := r.Embeddings(cxt, EmbeddingStageIndexing, qs)
 	if eerr != nil {
 		return eerr
 	}
@@ -184,20 +207,9 @@ func (r *Rag) Indexing(cxt context.Context, path string, payload interface{}, sp
 
 func (r *Rag) Retrieval(cxt context.Context, path string, queries []string, topk int) ([]ScoredChunks, error) {
 	var scoreds []ScoredChunks
-	qembeds, err := r.Embeddings(cxt, queries)
+	qembeds, err := r.Embeddings(cxt, EmbeddingStageRetrieval, queries)
 	if err != nil {
 		return scoreds, err
 	}
-	scoreds, err = r.Database.SearchChunks(path, qembeds, topk)
-	if err != nil {
-		return scoreds, err
-	}
-	return r.doPostRank(queries, scoreds)
-}
-
-func (r *Rag) doPostRank(queries []string, chunks []ScoredChunks) ([]ScoredChunks, error) {
-	if r.PostRank == nil {
-		return chunks, nil
-	}
-	return r.PostRank(r, queries, chunks)
+	return r.Database.SearchChunks(path, qembeds, topk)
 }
