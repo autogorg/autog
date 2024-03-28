@@ -57,13 +57,6 @@ func NewMemDatabase() (*MemoryDatabase, error) {
 	return md, err 
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func Norm(embed autog.Embedding) float64 {
 	n := 0.0
 	for _, f := range embed {
@@ -78,14 +71,6 @@ func Norms(embeds []autog.Embedding) autog.Embedding{
 		norms[i] = Norm(embed)
 	}
 	return norms
-}
-
-func DotProduct(a, b []float64) float64 {
-	result := 0.0
-	for i := range a {
-		result += a[i] * b[i]
-	}
-	return result
 }
 
 func CosSim(qembeds, dbembeds []autog.Embedding, qnorms, dbnorms *autog.Embedding, qsi, dsi int, topk int, dbchunks *[]autog.Chunk, channel chan<- []autog.ScoredChunks) {

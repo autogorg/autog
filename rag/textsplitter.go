@@ -6,12 +6,18 @@ import (
 )
 
 const (
-	DefaultChunkSize = 1500
+	DefaultChunkSize  = 512
+	DefaultMinStep    = 500
+	DefaultMinCheck   = 12
+	DefaultMinOverlap = 0.01
+	DefaultMaxOverlap = 0.99
 )
 
 type TextSplitter struct {
 	ChunkSize int
 	Overlap float64
+	BreakStartChars []rune
+	BreakEndChars   []rune
 }
 
 func NewTextSplitter(chunkSize int) *TextSplitter {
@@ -22,14 +28,44 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 	if ts.ChunkSize <= 0 {
 		ts.ChunkSize = DefaultChunkSize
 	}
-	if ts.Overlap <= 0.01 {
-		ts.Overlap = 0.01
+	if ts.Overlap <= DefaultMinOverlap{
+		ts.Overlap = DefaultMinOverlap
 	}
-	if ts.Overlap >= 0.99 {
-		ts.Overlap = 0.99
+	if ts.Overlap >= DefaultMaxOverlap {
+		ts.Overlap = DefaultMaxOverlap
 	}
-	n := ts.ChunkSize
-	f := 1.0 - ts.Overlap
+
+	size := ts.ChunkSize
+	step := int((1.0-ts.Overlap)*float64(ts.ChunkSize))
+	if step < DefaultMinStep {
+		step = DefaultMinStep
+	}
+	check := int(ts.Overlap*float64(ts.ChunkSize))
+	if check < DefaultMinCheck {
+		check = DefaultMinCheck
+	}
+	check = min(int(float64(step)*0.5), check)
+
+	NeedCheckBreak := func (start bool) bool {
+		if start {
+			return len(ts.BreakStartChars) > 0
+		}
+		return len(ts.BreakEndChars) > 0
+	}
+
+    CheckBreakChar := func(start bool, c rune) bool {
+		chars := ts.BreakEndChars
+		if start {
+			chars = ts.BreakStartChars
+		}
+        for _, bc := range chars {
+            if c == bc {
+                return true
+            }
+        }
+        return false
+    }
+
 	parser := func (path string, payload interface{}) ([]autog.Chunk, error) {
 		var chunks []autog.Chunk
 		if path == autog.DOCUMENT_PATH_NONE {
@@ -42,21 +78,22 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 		runes := []rune(content)
 		i := 0
 		for i < len(runes) {
-			//  f * n -- (1.0 + f) * n 
-			j := min(i+int((1.0+f)*float64(n)), len(runes))
-			found := false
-			for j > i+int(f*float64(n)) {
-				chunk := string(runes[i:j])
-				if chunk[len(chunk)-1] == '.' || chunk[len(chunk)-1] == '\n' {
-					found = true
-					break
+			j := min(i+size, len(runes))
+			if NeedCheckBreak(false) {
+				j = min(i+size+check, len(runes))
+				found := false
+				for j > i+size && j > 0 {
+					if CheckBreakChar(false, runes[j-1]) {
+						found = true
+						break
+					}
+					j--
 				}
-				j--
+				if !found {
+					j = min(i+size, len(runes))
+				}
 			}
-			// n
-			if !found {
-				j = min(i+n, len(runes))
-			}
+
 			query := string(runes[i:j])
 			chunk := &MemChunk{
 				Index     : len(chunks),
@@ -68,7 +105,23 @@ func (ts *TextSplitter) GetParser() autog.ParserFunction {
 				Payload   : "",
 			}
 			chunks = append(chunks, chunk)
-			i = j
+
+			nexti := i + step
+			if NeedCheckBreak(true) {
+				nexti = max(i+step-check, DefaultMinCheck)
+				found := false
+				for nexti < i+step && nexti < len(runes) {
+					if CheckBreakChar(true, runes[nexti]) {
+						found = true
+						break
+					}
+					nexti++
+				}
+				if !found {
+					nexti = i + step
+				}
+			}
+			i = nexti
 		}
 		return chunks, nil
 	}
