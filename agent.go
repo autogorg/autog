@@ -53,7 +53,7 @@ func (a *Agent) StreamStart() *strings.Builder {
 	if a.Output != nil && a.Output.WriteContent != nil{
 		a.Output.WriteContent(a.AgentStage, StreamStageStart, contentbuf, "")
 	}
-	return buf
+	return contentbuf
 }
 
 func (a *Agent) StreamDelta(contentbuf *strings.Builder, delta string) {
