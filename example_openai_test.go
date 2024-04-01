@@ -162,21 +162,14 @@ func ExampleOpenAiChatAgent() {
 		},
 	}
 
-	output := &autog.Output{}
-	output.WriteStreamStart = func() *strings.Builder {
-		return &strings.Builder{}
-	}
-	output.WriteStreamDelta = func(contentbuf *strings.Builder, delta string) {
-		if output.AgentStage == autog.AsWaitResponse {
-			fmt.Print(delta)
-		}
-	}
-	output.WriteStreamError = func(contentbuf *strings.Builder, status autog.LLMStatus, errstr string) {
-		fmt.Print(errstr)
-	}
-	output.WriteStreamEnd = func(contentbuf *strings.Builder) {
-		// You can get whole messsage by contentbuf.String()
-		return
+	output := &autog.Output{
+		WriteContent: func(stage AgentStage, stream StreamStage, buf *strings.Builder, str string) {
+			if stage == autog.AsWaitResponse && stream == autog.StreamStageDelta {
+				fmt.Print(str)
+			} else if stream == autog.StreamStageError {
+				fmt.Print(str)
+			}
+		},
 	}
 
     chat.Prompt(system, longHistory, shortHistory).

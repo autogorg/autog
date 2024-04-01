@@ -18,6 +18,15 @@ const (
 	AsSummarize
 )
 
+type StreamStage int
+
+const (
+	StreamStageStart StreamStage = iota
+	StreamStageDelta
+	StreamStageError
+	StreamStageEnd
+)
+
 type Agent struct {
 	Prompts []*PromptItem
 	Request string
@@ -32,43 +41,36 @@ type Agent struct {
 	ResponseStatus  LLMStatus
 	ResponseMessage ChatMessage
 	ReflectionContent string
+	AgentStage AgentStage
 	CanDoAction bool
 	DoAction *DoAction
 	CanDoReflection bool
 	DoReflection *DoReflection
 }
 
-func OutputChangeAgentStage(output *Output, stage AgentStage) {
-	if output != nil {
-		output.ChangeAgentStage(stage)
+func (a *Agent) StreamStart() *strings.Builder {
+	contentbuf := &strings.Builder{}
+	if a.Output != nil && a.Output.WriteContent != nil{
+		a.Output.WriteContent(a.AgentStage, StreamStageStart, contentbuf, "")
+	}
+	return buf
+}
+
+func (a *Agent) StreamDelta(contentbuf *strings.Builder, delta string) {
+	if a.Output != nil && a.Output.WriteContent != nil{
+		a.Output.WriteContent(a.AgentStage, StreamStageDelta, contentbuf, delta)
 	}
 }
 
-func OutputStreamStart(output *Output) *strings.Builder {
-	if output != nil {
-		return output.StreamStart()
-	}
-	return &strings.Builder{}
-}
-
-func OutputStreamDelta(output *Output, contentbuf *strings.Builder, delta string) {
-	if contentbuf != nil {
-		contentbuf.WriteString(delta)
-	}
-	if output != nil {
-		output.StreamDelta(contentbuf, delta)
+func (a *Agent) StreamError(contentbuf *strings.Builder, status LLMStatus, errstr string) {
+	if a.Output != nil && a.Output.WriteContent != nil{
+		a.Output.WriteContent(a.AgentStage, StreamStageError, contentbuf, errstr)
 	}
 }
 
-func OutputStreamError(output *Output, contentbuf *strings.Builder, status LLMStatus, errstr string) {
-	if output != nil {
-		output.StreamError(contentbuf, status, errstr)
-	}
-}
-
-func OutputStreamEnd(output *Output, contentbuf *strings.Builder) {
-	if output != nil {
-		output.StreamEnd(contentbuf)
+func (a *Agent) StreamEnd(contentbuf *strings.Builder) {
+	if a.Output != nil && a.Output.WriteContent != nil{
+		a.Output.WriteContent(a.AgentStage, StreamStageEnd, contentbuf, "")
 	}
 }
 
@@ -90,7 +92,7 @@ func (a *Agent) Prompt(prompts ...*PromptItem) *Agent {
 }
 
 func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) *Agent {
-	OutputChangeAgentStage(output, AsReadQuestion)
+	a.AgentStage = AsReadQuestion
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -102,7 +104,7 @@ func (a *Agent) ReadQuestion(cxt context.Context, input *Input, output *Output) 
 }
 
 func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
-	OutputChangeAgentStage(a.Output, AsAskLLM)
+	a.AgentStage = AsAskLLM
 	var msgs []ChatMessage
 	msg := ChatMessage{ Role:ROLE_USER, Content:a.Request }
 	for _, pmt := range a.Prompts {
@@ -125,11 +127,11 @@ func (a *Agent) AskLLM(llm LLM, stream bool) *Agent {
 }
 
 func (a *Agent) AskReflection(reflection string) *Agent {
-	OutputChangeAgentStage(a.Output, AsAskReflection)
+	a.AgentStage = AsAskReflection
 	var contentbuf *strings.Builder
-	contentbuf = OutputStreamStart(a.Output)
-	OutputStreamDelta(a.Output, contentbuf, reflection)
-	OutputStreamEnd(a.Output, contentbuf)
+	contentbuf = a.StreamStart()
+	a.StreamDelta(contentbuf, reflection)
+	a.StreamEnd(contentbuf)
 	msg := ChatMessage{ Role:ROLE_USER, Content:reflection }
 	a.PromptMessages = append(a.PromptMessages, msg)
 	a.ShortHistoryMessages = append(a.ShortHistoryMessages, msg)
@@ -137,7 +139,7 @@ func (a *Agent) AskReflection(reflection string) *Agent {
 }
 
 func (a *Agent) WaitResponse(cxt context.Context) *Agent {
-	OutputChangeAgentStage(a.Output, AsWaitResponse)
+	a.AgentStage = AsWaitResponse
 	if cxt == nil {
 		cxt = context.Background()
 	}
@@ -146,16 +148,16 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 	var msg ChatMessage
 	var contentbuf *strings.Builder
 	if !a.Stream {
-		contentbuf = OutputStreamStart(a.Output)
+		contentbuf = a.StreamStart()
 		sts, msg = a.LLM.SendMessages(cxt, a.PromptMessages)
 		if sts == LLM_STATUS_OK {
-			OutputStreamDelta(a.Output, contentbuf, msg.Content)
+			a.StreamDelta(contentbuf, msg.Content)
 		} else {
-			OutputStreamError(a.Output, contentbuf, sts, msg.Content)
+			a.StreamError(contentbuf, sts, msg.Content)
 		}
-		OutputStreamEnd(a.Output, contentbuf)
+		a.StreamEnd(contentbuf)
 	} else {
-		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, a.Output)
+		sts, msg = a.LLM.SendMessagesStream(cxt, a.PromptMessages, a)
 	}
 	a.ResponseStatus  = sts
 	a.ResponseMessage = msg
@@ -166,34 +168,34 @@ func (a *Agent) WaitResponse(cxt context.Context) *Agent {
 }
 
 func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *PromptItem, force bool) *Agent {
-	OutputChangeAgentStage(a.Output, AsSummarize)
+	a.AgentStage = AsSummarize
 	if cxt == nil {
 		cxt = context.Background()
 	}
 	a.Context = cxt
 	var contentbuf *strings.Builder
-	contentbuf = OutputStreamStart(a.Output)
+	contentbuf = a.StreamStart()
 	smy := &Summary{}
 	smy.Cxt = cxt
 	smy.LLM = a.LLM
-	smy.Output    = a.Output
-	smy.OutputBuf = contentbuf
+	smy.StreamReader = a
+	smy.StreamBuffer = contentbuf
 	smy.DisableStream = false
 	_, smy.PromptSummary = summary.doGetPrompt(a.Request)
 	_, smy.PromptPrefix  = prefix.doGetPrompt(a.Request)
 
 	err := smy.InitSummary()
 	if err != nil {
-		OutputStreamError(a.Output, contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
-		OutputStreamEnd(a.Output, contentbuf)
+		a.StreamError(contentbuf, LLM_STATUS_BED_MESSAGE, fmt.Sprintf("InitSummary ERROR: %s", err))
+		a.StreamEnd(contentbuf)
 		return a
 	}
 	status, smsgs := smy.Summarize(a.LongHistoryMessages, a.ShortHistoryMessages, force)
 	if status != LLM_STATUS_OK {
-		OutputStreamEnd(a.Output, contentbuf)
+		a.StreamEnd(contentbuf)
 		return a
 	}
-	OutputStreamEnd(a.Output, contentbuf)
+	a.StreamEnd(contentbuf)
 
 	a.LongHistoryMessages  = smsgs
 	a.ShortHistoryMessages = []ChatMessage{}
@@ -202,7 +204,7 @@ func (a *Agent) Summarize(cxt context.Context, summary *PromptItem, prefix *Prom
 }
 
 func (a *Agent) Action(doAct *DoAction) *Agent {
-	OutputChangeAgentStage(a.Output, AsAction)
+	a.AgentStage = AsAction
 	a.DoAction = doAct
 	if !a.CanDoAction {
 		return a
@@ -220,7 +222,7 @@ func (a *Agent) Action(doAct *DoAction) *Agent {
 }
 
 func (a *Agent) Reflection(doRef *DoReflection, retry int) *Agent {
-	OutputChangeAgentStage(a.Output, AsReflection)
+	a.AgentStage = AsReflection
 	if doRef == nil {
 		doRef = &DoReflection {
 			Do : func (reflection string, retry int) {

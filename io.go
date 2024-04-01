@@ -16,46 +16,11 @@ func (i *Input) doReadContent() string {
 }
 
 type Output struct {
-	AgentStage AgentStage
-	WriteAgentStage  func(stage AgentStage)
-	WriteStreamStart func() *strings.Builder
-	WriteStreamDelta func(contentbuf *strings.Builder, delta string)
-	WriteStreamError func(contentbuf *strings.Builder, status LLMStatus, errstr string)
-	WriteStreamEnd   func(contentbuf *strings.Builder)
+	WriteContent func(stage AgentStage, stream StreamStage, buf *strings.Builder, str string)
 }
 
-func (o *Output) ChangeAgentStage(stage AgentStage) {
-	o.AgentStage = stage
-	if o.WriteAgentStage == nil {
-		return
+func (o *Output) doWriteContent(stage AgentStage, stream StreamStage, buf *strings.Builder, str string) {
+	if o.WriteContent != nil {
+		o.WriteContent(stage, stream, buf , str)
 	}
-	o.WriteAgentStage(stage)
-}
-
-func (o *Output) StreamStart() *strings.Builder {
-	if o.WriteStreamStart == nil {
-		return nil
-	}
-	return o.WriteStreamStart()
-}
-
-func (o *Output) StreamDelta(contentbuf *strings.Builder, delta string) {
-	if o.WriteStreamDelta == nil {
-		return
-	}
-	o.WriteStreamDelta(contentbuf, delta)
-}
-
-func (o *Output) StreamError(contentbuf *strings.Builder, status LLMStatus, errstr string) {
-	if o.WriteStreamError == nil {
-		return
-	}
-	o.WriteStreamError(contentbuf, status, errstr)
-}
-
-func (o *Output) StreamEnd(contentbuf *strings.Builder) {
-	if o.WriteStreamEnd == nil {
-		return
-	}
-	o.WriteStreamEnd(contentbuf)
 }
