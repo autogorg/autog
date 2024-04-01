@@ -1,6 +1,7 @@
 package autog_test
 
 import (
+	"os"
 	"fmt"
 	"strings"
 	"context"
@@ -12,7 +13,6 @@ import (
 
 const (
 	OpenAIApiBase = "https://api.chatpp.org/v1"
-	OpenAIApiKey  = "sk-***"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 ) 
 
 func ExampleOpenAiEmbeddings() {
-	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: os.Getenv("API_KEY")}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
