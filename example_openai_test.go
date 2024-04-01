@@ -49,7 +49,7 @@ func ExampleOpenAiEmbeddings() {
 func ExampleOpenAiRag() {
 	cxt := context.Background()
 
-	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: os.Getenv("API_KEY")}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
@@ -117,7 +117,7 @@ func ExampleOpenAiChatAgent() {
 		autog.Agent
 	}
 
-	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: OpenAIApiKey}
+	openai := &llm.OpenAi{ ApiBase: OpenAIApiBase, ApiKey: os.Getenv("API_KEY")}
 	err := openai.InitLLM()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
@@ -163,7 +163,7 @@ func ExampleOpenAiChatAgent() {
 	}
 
 	output := &autog.Output{
-		WriteContent: func(stage AgentStage, stream StreamStage, buf *strings.Builder, str string) {
+		WriteContent: func(stage autog.AgentStage, stream autog.StreamStage, buf *strings.Builder, str string) {
 			if stage == autog.AsWaitResponse && stream == autog.StreamStageDelta {
 				fmt.Print(str)
 			} else if stream == autog.StreamStageError {

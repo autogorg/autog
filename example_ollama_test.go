@@ -153,7 +153,7 @@ func ExampleOllamaChatAgent() {
 	}
 
 	output := &autog.Output{
-		WriteContent: func(stage AgentStage, stream StreamStage, buf *strings.Builder, str string) {
+		WriteContent: func(stage autog.AgentStage, stream autog.StreamStage, buf *strings.Builder, str string) {
 			if stage == autog.AsWaitResponse && stream == autog.StreamStageDelta {
 				fmt.Print(str)
 			} else if stream == autog.StreamStageError {
